@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
-type ArgType interface {
-	int | string | bool | time.Duration
+type SimpleArg interface {
+	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
 }
 
-func Var[T ArgType](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) {
+type ComplexArg interface{} // ?
+
+func Var[T SimpleArg](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) {
 	switch v := any(value).(type) {
 	case *int:
 		flags.IntVar(v, name, any(defaultValue).(int), usage)
@@ -20,6 +22,14 @@ func Var[T ArgType](flags *flag.FlagSet, value *T, defaultValue T, name, usage s
 		flags.BoolVar(v, name, any(defaultValue).(bool), usage)
 	case *time.Duration:
 		flags.DurationVar(v, name, any(defaultValue).(time.Duration), usage)
+	case *float64:
+		flags.Float64Var(v, name, any(defaultValue).(float64), usage)
+	case *uint:
+		flags.UintVar(v, name, any(defaultValue).(uint), usage)
+	case *int64:
+		flags.Int64Var(v, name, any(defaultValue).(int64), usage)
+	case *uint64:
+		flags.Uint64Var(v, name, any(defaultValue).(uint64), usage)
 	default:
 		panic(fmt.Errorf(`unhandled type: %T`, v))
 	}
