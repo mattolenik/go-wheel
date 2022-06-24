@@ -36,7 +36,7 @@ func Var[T ArgType](flags *flag.FlagSet, value *T, defaultValue T, name, usage s
 	case *uint64:
 		flags.Uint64Var(v, name, any(defaultValue).(uint64), usage)
 	default:
-		panic(fmt.Errorf(`unhandled type: %T`, v))
+		panic(fmt.Errorf(`unsupported type: %T`, v))
 	}
 	return Flag[T]{Name: name, Usage: usage, Value: value, DefaultValue: defaultValue}
 }
