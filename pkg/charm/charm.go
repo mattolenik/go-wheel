@@ -10,8 +10,6 @@ type SimpleArg interface {
 	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
 }
 
-type ComplexArg interface{} // ?
-
 func Var[T SimpleArg](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) {
 	switch v := any(value).(type) {
 	case *int:
