@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCharm(t *testing.T) {
+func TestVar(t *testing.T) {
 	assert := assert.New(t)
 
 	args := []string{
