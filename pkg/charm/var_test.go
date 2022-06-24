@@ -15,7 +15,7 @@ func TestVar(t *testing.T) {
 		"-string=two", "-bool=true", "-duration=5s", "-float64=3.14",
 		"-int=-10", "-uint=10", "-int64=-30", "-uint64=30",
 	}
-	flags := flag.NewFlagSet("test", flag.PanicOnError)
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
 
 	var i int
 	var s string
@@ -35,7 +35,7 @@ func TestVar(t *testing.T) {
 	Var(flags, &i64, 0, "int64", "")
 	Var(flags, &ui64, 0, "uint64", "")
 
-	flags.Parse(args)
+	assert.NoError(flags.Parse(args))
 
 	assert.Equal("two", s)
 	assert.Equal(5*time.Second, d)
