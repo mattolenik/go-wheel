@@ -45,3 +45,29 @@ func TestVar(t *testing.T) {
 	assert.Equal(int64(-30), i64)
 	assert.Equal(uint64(30), ui64)
 }
+
+func TestVarFlagReturn(t *testing.T) {
+	assert := assert.New(t)
+
+	args := []string{"-string=two", "-int=-10"}
+	flags := flag.NewFlagSet("test", flag.PanicOnError)
+
+	var i int
+	var s string
+	iFlag := Var(flags, &i, 1, "int", "")
+	sFlag := Var(flags, &s, "str", "string", "")
+
+	flags.Parse(args)
+
+	assert.Equal("two", s)
+	assert.Equal(int(-10), i)
+
+	assert.Equal(i, *iFlag.Value, "Flag's value doesn't equal parsed value")
+	assert.Equal(s, *sFlag.Value, "Flag's value doesn't equal parsed value")
+
+	assert.Equal(&i, iFlag.Value, "Flag's value pointer doesn't point at the parsed result")
+	assert.Equal(&s, sFlag.Value, "Flag's value pointer doesn't point at the parsed result")
+
+	assert.Equal(1, iFlag.DefaultValue, "int default value did not match")
+	assert.Equal("str", sFlag.DefaultValue, "string default value did not match")
+}
