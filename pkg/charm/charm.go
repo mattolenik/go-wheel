@@ -1,6 +1,7 @@
 package charm
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/mattolenik/go-charm/internal/fun"
@@ -15,12 +16,24 @@ type Flag[T any] struct {
 
 type Command struct {
 	Name     string
-	Flags    []Flag[any]
+	Usage    string
+	Examples []string
+	Flags    []string
 	Commands []Command
+	FlagSet  *flag.FlagSet
 }
 
 func (c *Command) String() string {
-	flagNames := fun.Map(c.Flags, func(f Flag[any]) string { return f.Name })
 	subCommandNames := fun.Map(c.Commands, func(c Command) string { return c.Name })
-	return fmt.Sprintf("Name: %q, Flags: %q, Subcommands: %q", c.Name, flagNames, subCommandNames)
+	return fmt.Sprintf("Name: %q, Flags: %q, Subcommands: %q", c.Name, c.Flags, subCommandNames)
+}
+
+func NewCommand(flags *flag.FlagSet, name, usage string) *Command {
+	return &Command{
+		Name:     name,
+		Usage:    usage,
+		Examples: []string{},
+		Commands: []Command{},
+		FlagSet:  flags,
+	}
 }
