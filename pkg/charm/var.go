@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-type Flag[T ArgType] struct {
-	Name         string
-	Usage        string
-	Value        *T
-	DefaultValue T
-}
-
 type ArgType interface {
 	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
 }
