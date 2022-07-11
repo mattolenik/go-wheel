@@ -4,15 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"regexp"
 	"time"
+
+	"github.com/mattolenik/go-charm/internal/regex"
 )
+
+var invalidValueForFlagErrorRegex = regexp.MustCompile(`^invalid value "((?:\\"|.)*?)" for flag -([^:]+):`) //gm)
 
 type FlagType interface {
 	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
 }
 
 func FlagVar[T FlagType](c *Command, value *T, dfltValue T, name, usage string) *FlagDefinition[T] {
-	v := Var(c.FlagSet, value, dfltValue, name, usage)
+	v := Var(c.flagSet, value, dfltValue, name, usage)
 	c.Flags = append(c.Flags, v)
 	return v
 }
@@ -85,4 +90,12 @@ func Var[T FlagType](flags *flag.FlagSet, value *T, defaultValue T, name, usage 
 		panic(fmt.Errorf(`unsupported type: %T`, v))
 	}
 	return &FlagDefinition[T]{Name: name, Usage: usage, Value: value, Default: defaultValue}
+}
+
+func InvalidValueForFlag(e error) (isInvalid bool, value, flagName string) {
+	val, flag, err := regex.Capture2(invalidValueForFlagErrorRegex, e.Error())
+	if err != nil {
+		return false, "", ""
+	}
+	return true, val, flag
 }
