@@ -6,11 +6,7 @@ import (
 	"time"
 )
 
-type ArgType interface {
-	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
-}
-
-func Var[T ArgType](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) Flag[T] {
+func Var[T FlagType](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) FlagDefinition[T] {
 	switch v := any(value).(type) {
 	case *int:
 		flags.IntVar(v, name, any(defaultValue).(int), usage)
@@ -31,5 +27,5 @@ func Var[T ArgType](flags *flag.FlagSet, value *T, defaultValue T, name, usage s
 	default:
 		panic(fmt.Errorf(`unsupported type: %T`, v))
 	}
-	return Flag[T]{Name: name, Usage: usage, Value: value, DefaultValue: defaultValue}
+	return FlagDefinition[T]{Name: name, Usage: usage, Value: value, DefaultValue: defaultValue}
 }
