@@ -68,6 +68,6 @@ func TestVarFlagReturn(t *testing.T) {
 	assert.Equal(&i, iFlag.Value, "Flag's value pointer doesn't point at the parsed result")
 	assert.Equal(&s, sFlag.Value, "Flag's value pointer doesn't point at the parsed result")
 
-	assert.Equal(1, iFlag.DefaultValue, "int default value did not match")
-	assert.Equal("str", sFlag.DefaultValue, "string default value did not match")
+	assert.Equal(1, iFlag.Default, "int default value did not match")
+	assert.Equal("str", sFlag.Default, "string default value did not match")
 }
