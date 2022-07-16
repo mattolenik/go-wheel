@@ -13,9 +13,8 @@ func TestVar(t *testing.T) {
 
 	args := []string{
 		"-string=two", "-bool=true", "-duration=5s", "-float64=3.14",
-		"-int=-10", "-uint=10", "-int64=-30", "-uint64=30",
+		"-int=-10", "-uint=10", "-int64=-30", "-uint64=30", "-intslice=4,2,5",
 	}
-	flags := flag.NewFlagSet("test", flag.ContinueOnError)
 
 	var i int
 	var s string
@@ -25,17 +24,22 @@ func TestVar(t *testing.T) {
 	var ui uint
 	var i64 int64
 	var ui64 uint64
+	var sl []int
 
-	Var(flags, &s, "", "string", "")
-	Var(flags, &b, false, "bool", "")
-	Var(flags, &d, 0, "duration", "")
-	Var(flags, &f, 0, "float64", "")
-	Var(flags, &i, 0, "int", "")
-	Var(flags, &ui, 0, "uint", "")
-	Var(flags, &i64, 0, "int64", "")
-	Var(flags, &ui64, 0, "uint64", "")
+	c := NewCommand("app", "app usage")
 
-	assert.NoError(flags.Parse(args))
+	FlagVar(c, &s, "", "string", "")
+	FlagVar(c, &b, false, "bool", "")
+	FlagVar(c, &d, 0, "duration", "")
+	FlagVar(c, &f, 0, "float64", "")
+	FlagVar(c, &i, 0, "int", "")
+	FlagVar(c, &ui, 0, "uint", "")
+	FlagVar(c, &i64, 0, "int64", "")
+	FlagVar(c, &ui64, 0, "uint64", "")
+	FlagVar(c, &sl, []int{}, "intslice", "")
+
+	err := c.Parse(args)
+	assert.NoError(err)
 
 	assert.Equal("two", s)
 	assert.Equal(5*time.Second, d)
@@ -44,6 +48,8 @@ func TestVar(t *testing.T) {
 	assert.Equal(uint(10), ui)
 	assert.Equal(int64(-30), i64)
 	assert.Equal(uint64(30), ui64)
+	assert.ElementsMatch([]int{4, 2, 5}, sl)
+
 }
 
 func TestVarFlagReturn(t *testing.T) {
@@ -52,10 +58,12 @@ func TestVarFlagReturn(t *testing.T) {
 	args := []string{"-string=two", "-int=-10"}
 	flags := flag.NewFlagSet("test", flag.PanicOnError)
 
+	// TODO: seems like flags really shouldn't be coupled back to command? Find a better way to factor this
+	c := NewCommand("app", "app usage")
 	var i int
 	var s string
-	iFlag := Var(flags, &i, 1, "int", "")
-	sFlag := Var(flags, &s, "str", "string", "")
+	iFlag := FlagVar(c, &i, 1, "int", "")
+	sFlag := FlagVar(c, &s, "str", "string", "")
 
 	flags.Parse(args)
 

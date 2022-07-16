@@ -1,33 +1,16 @@
 package charm
 
 import (
-	"flag"
 	"fmt"
 	"reflect"
-	"regexp"
 	"time"
 
-	"github.com/mattolenik/go-charm/internal/regex"
+	"github.com/mattolenik/go-charm/internal/fn"
+	"github.com/mattolenik/go-charm/internal/typ"
 )
 
-var invalidValueForFlagErrorRegex = regexp.MustCompile(`^invalid value "((?:\\"|.)*?)" for flag -([^:]+):`) //gm)
-
 type FlagType interface {
-	float64 | int | int64 | uint | uint64 | string | bool | time.Duration
-}
-
-func FlagVar[T FlagType](c *Command, value *T, dfltValue T, name, usage string) *FlagDefinition[T] {
-	v := Var(c.flagSet, value, dfltValue, name, usage)
-	c.Flags = append(c.Flags, v)
-	return v
-}
-
-type Flag interface {
-	GetName() string
-	GetUsage() string
-	GetDefault() any
-	GetValue() any
-	SetValue(any)
+	string | time.Duration | typ.Primitive | typ.PrimitiveSlice | []time.Duration | any
 }
 
 type FlagDefinition[T FlagType] struct {
@@ -37,29 +20,12 @@ type FlagDefinition[T FlagType] struct {
 	Value   *T
 }
 
-func (fd *FlagDefinition[T]) GetName() string {
-	return fd.Name
-}
-
-func (fd *FlagDefinition[T]) GetUsage() string {
-	return fd.Name
-}
-
-func (fd *FlagDefinition[T]) GetDefault() any {
-	return fd.Default
-}
-
-func (fd *FlagDefinition[T]) GetValue() any {
-	return *fd.Value
-}
-
-func (fd *FlagDefinition[T]) SetValue(value any) {
-	valType := reflect.TypeOf(fd.Value).Elem()
-	vType := reflect.TypeOf(value)
-	if vType.AssignableTo(valType) {
-		v := reflect.ValueOf(fd.Value)
-		v.Elem().Set(reflect.ValueOf(value))
+func (fd *FlagDefinition[T]) String() string {
+	// TOOD: implement properly
+	if s, ok := any(fd.Value).(fmt.Stringer); ok {
+		return s.String()
 	}
+	return fmt.Sprint(fd.Value)
 }
 
 func FlagVars[T FlagType](c *Command, flags ...FlagDefinition[T]) {
@@ -68,7 +34,8 @@ func FlagVars[T FlagType](c *Command, flags ...FlagDefinition[T]) {
 	}
 }
 
-func Var[T FlagType](flags *flag.FlagSet, value *T, defaultValue T, name, usage string) *FlagDefinition[T] {
+func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage string) *FlagDefinition[T] {
+	flags := c.flagSet
 	switch v := any(value).(type) {
 	case *int:
 		flags.IntVar(v, name, any(defaultValue).(int), usage)
@@ -87,15 +54,41 @@ func Var[T FlagType](flags *flag.FlagSet, value *T, defaultValue T, name, usage 
 	case *uint64:
 		flags.Uint64Var(v, name, any(defaultValue).(uint64), usage)
 	default:
-		panic(fmt.Errorf(`unsupported type: %T`, v))
+		t := reflect.TypeOf(v).Elem()
+		cv, ok := c.FindTypeConverter(t)
+		if !ok {
+			panic(fmt.Errorf("no type converter for %q", t))
+		}
+		flagSetter, ok := cv.(FlagSetterFunc[T])
+		if !ok {
+			panic(fmt.Errorf("expected converter for %q to have type %q but found %q instead", t, fn.TypeOf[FlagSetterFunc[T]](), reflect.TypeOf(flagSetter)))
+		}
+		fv := &flagValueImpl{
+			func(s string) error {
+				return flagSetter(s, value)
+			},
+			func() string {
+				return fmt.Sprintf("%v", value)
+			},
+		}
+		flags.Var(fv, name, usage)
 	}
+
+	// var err error
+	// *a, err = twine.FromDelimetedList[int](s, ",")
+	// return err
 	return &FlagDefinition[T]{Name: name, Usage: usage, Value: value, Default: defaultValue}
 }
 
-func InvalidValueForFlag(e error) (isInvalid bool, value, flagName string) {
-	val, flag, err := regex.Capture2(invalidValueForFlagErrorRegex, e.Error())
-	if err != nil {
-		return false, "", ""
-	}
-	return true, val, flag
+type flagValueImpl struct {
+	set    func(string) error
+	string func() string
+}
+
+func (f *flagValueImpl) Set(s string) error {
+	return f.set(s)
+}
+
+func (f *flagValueImpl) String() string {
+	return f.string()
 }
