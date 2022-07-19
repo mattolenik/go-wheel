@@ -74,9 +74,6 @@ func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage strin
 		flags.Var(fv, name, usage)
 	}
 
-	// var err error
-	// *a, err = twine.FromDelimetedList[int](s, ",")
-	// return err
 	return &FlagDefinition[T]{Name: name, Usage: usage, Value: value, Default: defaultValue}
 }
 
