@@ -22,6 +22,7 @@ type Command struct {
 	root           *Command
 	flagSet        *flag.FlagSet
 	typeConverters map[reflect.Type]any
+	Visited        bool
 }
 
 func NewCommand(name, usage string) *Command {
@@ -29,9 +30,9 @@ func NewCommand(name, usage string) *Command {
 		Name:           name,
 		Usage:          usage,
 		typeConverters: map[reflect.Type]any{},
+		flagSet:        flag.NewFlagSet(name, flag.ContinueOnError),
 	}
 	c.root = c
-	c.flagSet = flag.NewFlagSet(c.Name, flag.ContinueOnError)
 
 	// TODO: Get these implemented natively rather than registered as type converters.
 	RegisterTypeConverter(c, listConverter[int])
@@ -77,13 +78,23 @@ func (c *Command) String() string {
 }
 
 func (c *Command) SubCommand(name, usage string) *Command {
-	subCommand := NewCommand(name, usage)
-	subCommand.root = c.root
+	subCommand := &Command{
+		Name:           name,
+		Usage:          usage,
+		typeConverters: map[reflect.Type]any{},
+		root:           c.root,
+		flagSet:        flag.NewFlagSet(c.Name, flag.ContinueOnError),
+	}
 	c.SubCommands = append(c.SubCommands, subCommand)
 	return subCommand
 }
 
 func (c *Command) Parse(args []string) error {
+	return c.parse(args)
+}
+
+func (c *Command) parse(args []string) error {
+	c.Visited = true
 	if len(args) == 0 {
 		return nil
 	}
@@ -105,7 +116,7 @@ func (c *Command) Parse(args []string) error {
 	// All arguments from here on out are handled by the subcommand.
 	subCmdName := args[0]
 	if ok, subCmd := fn.Find(c.SubCommands, func(sc *Command) bool { return sc.Name == subCmdName }); ok {
-		return subCmd.Parse(args[1:])
+		return subCmd.parse(args[1:])
 	}
 
 	// Otherwise, treat all the remaining args as arguments to the command.
@@ -113,15 +124,16 @@ func (c *Command) Parse(args []string) error {
 	return nil
 }
 
-func (c *Command) TreePrint(indent string) string {
+// TreeString creates an indented, human readable multi-line string representation of the command tree.
+func (c *Command) TreeString(indent string) string {
 	sb := &strings.Builder{}
-	c.walk(0, func(depth int, c *Command) {
+	c.Walk(0, func(depth int, c *Command) {
 		sb.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(indent, depth), c.String()))
 	})
 	return sb.String()
 }
 
-func (c *Command) walk(depth int, fn func(int, *Command)) {
+func (c *Command) Walk(depth int, fn func(int, *Command)) {
 	fn(depth, c)
 	for _, subCmd := range c.SubCommands {
 		fn(depth+1, subCmd)
