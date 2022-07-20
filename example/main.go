@@ -63,7 +63,7 @@ func mainE() error {
 }
 
 type DbdrawerFlags struct {
-	Sl []int  `flag:"sl" name:"Int slicerydicer" usage:"some information usage might go here"`
+	Sl []int  `flag:"sl" desc:"Int slicerydicer" usage:"some information usage might go here"`
 	A  string `flag:"a,required"`
 }
 
