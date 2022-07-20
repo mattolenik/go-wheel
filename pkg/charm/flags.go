@@ -88,6 +88,7 @@ func FlagVar[T FlagType](c *Command, value *T, defaultValue T, required bool, na
 		}
 		fv := &flagValueImpl{
 			func(s string) error {
+				// TODO: This is actually called multiple times! Use for multi value flags
 				return flagSetter(s, value)
 			},
 			func() string {

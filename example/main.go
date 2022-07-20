@@ -29,10 +29,16 @@ func mainE() error {
 		return nil
 	})
 
-	_ = charm.FlagF(c, 5, false, "intval", "the int value")
+	_ = charm.FlagF(c, []int{}, false, "sl", "a slice")
 	err := c.Parse(os.Args[1:])
 	if err != nil {
 		return err
 	}
+
+	//_ = charm.FlagF(c, 5, false, "intval", "the int value")
+	//err = c.Parse(os.Args[1:])
+	//if err != nil {
+	//	return err
+	//}
 	return c.ExecDeepest()
 }
