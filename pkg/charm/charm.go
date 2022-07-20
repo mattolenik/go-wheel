@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/mattolenik/go-charm/internal/fn"
@@ -16,8 +17,8 @@ type Command struct {
 	Usage          string
 	Examples       []string
 	Args           []string
-	Parent         *Command
 	SubCommands    []*Command
+	Flags          []*Flag[any]
 	root           *Command
 	flagSet        *flag.FlagSet
 	typeConverters map[reflect.Type]any
@@ -72,20 +73,17 @@ func (c *Command) FindTypeConverter(t reflect.Type) (any, bool) {
 }
 
 func (c *Command) String() string {
-	subCommandNames := fn.Map(c.SubCommands, func(c *Command) string { return c.Name })
-	return fmt.Sprintf("Name: %q, Subcommands: %q", c.Name, subCommandNames)
+	return fmt.Sprintf("Name: %q, Flags: %q, Subcommands: %d", c.Name, c.Flags, len(c.SubCommands))
 }
 
 func (c *Command) SubCommand(name, usage string) *Command {
 	subCommand := NewCommand(name, usage)
-	subCommand.Parent = c
 	subCommand.root = c.root
 	c.SubCommands = append(c.SubCommands, subCommand)
 	return subCommand
 }
 
 func (c *Command) Parse(args []string) error {
-	fmt.Println(args)
 	if len(args) == 0 {
 		return nil
 	}
@@ -113,4 +111,19 @@ func (c *Command) Parse(args []string) error {
 	// Otherwise, treat all the remaining args as arguments to the command.
 	c.Args = args
 	return nil
+}
+
+func (c *Command) TreePrint(indent string) string {
+	sb := &strings.Builder{}
+	c.walk(0, func(depth int, c *Command) {
+		sb.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(indent, depth), c.String()))
+	})
+	return sb.String()
+}
+
+func (c *Command) walk(depth int, fn func(int, *Command)) {
+	fn(depth, c)
+	for _, subCmd := range c.SubCommands {
+		fn(depth+1, subCmd)
+	}
 }

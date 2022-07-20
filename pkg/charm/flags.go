@@ -9,6 +9,8 @@ import (
 	"github.com/mattolenik/go-charm/internal/typ"
 )
 
+// TODO: Consider renaming types throughout this file
+
 // FlagPrimitives are types that are natively supported by Go's flag package.
 type FlagPrimitive interface {
 	int | int64 | uint | uint64 | float64 | bool | string | time.Duration
@@ -18,34 +20,41 @@ type FlagType interface {
 	FlagPrimitive | typ.PrimitiveSlice | []time.Duration | any
 }
 
-type FlagDefinition[T FlagType] struct {
+type Flag[T FlagType] struct {
 	Name    string
 	Usage   string
 	Default T
 	Value   *T
 }
 
-func (fd *FlagDefinition[T]) String() string {
-	// TOOD: implement properly
-	if s, ok := any(fd.Value).(fmt.Stringer); ok {
-		return s.String()
-	}
-	return fmt.Sprint(fd.Value)
+func (f *Flag[T]) String() string {
+	return fmt.Sprintf("Name: %s, Usage: %s, Value: %v, Default: %v", f.Name, f.Usage, *f.Value, f.Default)
 }
 
-func FlagVars[T FlagType](c *Command, flags ...FlagDefinition[T]) {
+func (f *Flag[T]) Untyped() *Flag[any] {
+	v := any(f.Value)
+	return &Flag[any]{
+		Name:    f.Name,
+		Usage:   f.Usage,
+		Default: any(f.Default),
+		Value:   &v,
+	}
+}
+
+func FlagVars[T FlagType](c *Command, flags ...Flag[T]) {
 	for _, flag := range flags {
 		FlagVar(c, flag.Value, flag.Default, flag.Name, flag.Usage)
 	}
 }
 
-func Flag[T FlagType](c *Command, defaultValue T, name, usage string) *T {
+// TODO: Rename after moving to flags package (maybe named options instead?)
+func FlagF[T FlagType](c *Command, defaultValue T, name, usage string) *T {
 	var t T
-	fd := FlagVar(c, &t, defaultValue, name, usage)
-	return fd.Value
+	f := FlagVar(c, &t, defaultValue, name, usage)
+	return f.Value
 }
 
-func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage string) *FlagDefinition[T] {
+func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage string) *Flag[T] {
 	flags := c.flagSet
 	switch v := any(value).(type) {
 	case *int:
@@ -85,7 +94,9 @@ func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage strin
 		flags.Var(fv, name, usage)
 	}
 
-	return &FlagDefinition[T]{Name: name, Usage: usage, Value: value, Default: defaultValue}
+	f := &Flag[T]{Name: name, Usage: usage, Value: value, Default: defaultValue}
+	c.Flags = append(c.Flags, f.Untyped())
+	return f
 }
 
 type flagValueImpl struct {
