@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 
 	"github.com/mattolenik/go-charm/pkg/charm"
 )
@@ -67,6 +68,42 @@ type DbdrawerFlags struct {
 	A  string `flag:"a" required:"true"`
 }
 
+type FlagTags struct {
+	Flag, Desc, Usage string
+	Required          bool
+}
+
+// String implements the fmt.Stringer interface for FlagTags
+func (ft *FlagTags) String() string {
+	return fmt.Sprintf("Flag: %q, Desc: %q, Usage: %q, Required: %v", ft.Flag, ft.Desc, ft.Usage, ft.Required)
+}
+
+// TODO: this whole thing is mistakenly relating the flag tags to entire struct and not each field, fix and clarify this
+// Parse takes all the tags from all the fields of the given struct and assigns them to the corresponding fields of a FlagTags struct.
+func Parse(struc any) (*FlagTags, error) {
+	strucType := reflect.TypeOf(struc).Elem()
+	if strucType.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("func FlagTags.Parse expected a value of kind struct, instead got %s", strucType.Kind())
+	}
+	for i := 0; i < strucType.NumField(); i++ {
+		f := strucType.Field(i)
+		tag := f.Tag
+		reqTagName := "required"
+		tagVal := tag.Get(reqTagName)
+		requiredBool, err := strconv.ParseBool(tagVal)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for boolean: %s", "required")
+		}
+		return &FlagTags{
+			Flag:     tag.Get("flag"),
+			Desc:     tag.Get("desc"),
+			Usage:    tag.Get("usage"),
+			Required: requiredBool,
+		}, nil
+	}
+	return nil
+}
+
 func StructCmd(c *charm.Command, struc any) error {
 	strucType := reflect.TypeOf(struc).Elem()
 	if strucType.Kind() != reflect.Struct {
@@ -76,7 +113,6 @@ func StructCmd(c *charm.Command, struc any) error {
 		f := strucType.Field(i)
 		tag := f.Tag
 		flag, desc, usage, required := tag.Get("flag"), tag.Get("desc"), tag.Get("usage"), tag.Get("required")
-		fmt.Printf("flag: %q, desc: %q, usage: %q, required: %q\n", flag, desc, usage, required)
 	}
 	return nil
 }
