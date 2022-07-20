@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/mattolenik/go-charm/internal/fn"
-	"github.com/mattolenik/go-charm/internal/twine"
 	"github.com/mattolenik/go-charm/internal/typ"
+	"github.com/mattolenik/go-charm/pkg/twine"
 )
 
 type CommandAction func(c *Command) error

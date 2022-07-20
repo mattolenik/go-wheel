@@ -64,7 +64,7 @@ func mainE() error {
 
 type DbdrawerFlags struct {
 	Sl []int  `flag:"sl" desc:"Int slicerydicer" usage:"some information usage might go here"`
-	A  string `flag:"a,required"`
+	A  string `flag:"a" required:"true"`
 }
 
 func StructCmd(c *charm.Command, struc any) error {
@@ -72,13 +72,11 @@ func StructCmd(c *charm.Command, struc any) error {
 	if strucType.Kind() != reflect.Struct {
 		return fmt.Errorf("func StructCmd expected a value of kind struct, instead got %s", strucType.Kind())
 	}
-	//strucVal := reflect.ValueOf(struc)
-	f := strucType.Field(0)
-	tag := f.Tag.Get("usage")
-	// if tag == "" {
-	// 	// skip
-	// }
-	fmt.Printf("tag: %s\n", tag)
-	fmt.Printf("tag: %s\n", f.Tag.Get("name"))
+	for i := 0; i < strucType.NumField(); i++ {
+		f := strucType.Field(i)
+		tag := f.Tag
+		flag, desc, usage, required := tag.Get("flag"), tag.Get("desc"), tag.Get("usage"), tag.Get("required")
+		fmt.Printf("flag: %q, desc: %q, usage: %q, required: %q\n", flag, desc, usage, required)
+	}
 	return nil
 }
