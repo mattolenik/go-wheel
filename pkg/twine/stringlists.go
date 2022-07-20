@@ -23,7 +23,7 @@ func FromDelimetedList[T typ.StringRepresentable](str, delim string) ([]T, error
 	resultValue := reflect.ValueOf(result)
 	for i, part := range parts {
 		part = strings.TrimSpace(part)
-		v, err := PrimitiveFromString[T](part)
+		v, err := Parse[T](part)
 		if err != nil {
 			return nil, fmt.Errorf("list item %q is not a valid value: %w", part, err)
 		}
@@ -32,93 +32,95 @@ func FromDelimetedList[T typ.StringRepresentable](str, delim string) ([]T, error
 	return result, nil
 }
 
-func PrimitiveFromString[T typ.StringRepresentable](part string) (T, error) {
-	var partVal any
+// TODO: rename?
+// Parse generically parses a string into any simple, string-reprsentable type, such as primitives, strings, time.Duration, etc.
+func Parse[T typ.StringRepresentable](str string) (T, error) {
+	var val any
 	var result T
 	var err error
 	switch v := any(result).(type) {
 	case string:
-		partVal = part
+		val = str
 	case bool:
-		partVal, err = strconv.ParseBool(part)
+		val, err = strconv.ParseBool(str)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a bool value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a bool value: %w", str, err)
 		}
 	case time.Duration:
-		partVal, err = time.ParseDuration(part)
+		val, err = time.ParseDuration(str)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a time.Duration value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a time.Duration value: %w", str, err)
 		}
 	case float32:
-		f, err := strconv.ParseFloat(part, 32)
+		f, err := strconv.ParseFloat(str, 32)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a float32 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a float32 value: %w", str, err)
 		}
-		partVal = float32(f)
+		val = float32(f)
 	case float64:
-		partVal, err = strconv.ParseFloat(part, 64)
+		val, err = strconv.ParseFloat(str, 64)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a float64 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a float64 value: %w", str, err)
 		}
 	case uint:
-		u, err := strconv.ParseUint(part, 10, 32)
+		u, err := strconv.ParseUint(str, 10, 32)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a uint value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a uint value: %w", str, err)
 		}
-		partVal = uint(u)
+		val = uint(u)
 	case uint8:
-		u, err := strconv.ParseUint(part, 10, 8)
+		u, err := strconv.ParseUint(str, 10, 8)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a uint8 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a uint8 value: %w", str, err)
 		}
-		partVal = uint8(u)
+		val = uint8(u)
 	case uint16:
-		u, err := strconv.ParseUint(part, 10, 16)
+		u, err := strconv.ParseUint(str, 10, 16)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a uint16 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a uint16 value: %w", str, err)
 		}
-		partVal = uint16(u)
+		val = uint16(u)
 	case uint32:
-		u, err := strconv.ParseUint(part, 10, 32)
+		u, err := strconv.ParseUint(str, 10, 32)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a uint32 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a uint32 value: %w", str, err)
 		}
-		partVal = uint32(u)
+		val = uint32(u)
 	case uint64:
-		partVal, err = strconv.ParseUint(part, 10, 64)
+		val, err = strconv.ParseUint(str, 10, 64)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a uint64 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a uint64 value: %w", str, err)
 		}
 	case int:
-		u, err := strconv.ParseInt(part, 10, 32)
+		u, err := strconv.ParseInt(str, 10, 32)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a int value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a int value: %w", str, err)
 		}
-		partVal = int(u)
+		val = int(u)
 	case int8:
-		u, err := strconv.ParseInt(part, 10, 8)
+		u, err := strconv.ParseInt(str, 10, 8)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a int32 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a int32 value: %w", str, err)
 		}
-		partVal = int8(u)
+		val = int8(u)
 	case int16:
-		u, err := strconv.ParseInt(part, 10, 16)
+		u, err := strconv.ParseInt(str, 10, 16)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a int32 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a int32 value: %w", str, err)
 		}
-		partVal = int16(u)
+		val = int16(u)
 	case int32:
-		u, err := strconv.ParseInt(part, 10, 32)
+		u, err := strconv.ParseInt(str, 10, 32)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a int32 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a int32 value: %w", str, err)
 		}
-		partVal = int32(u)
+		val = int32(u)
 	case int64:
-		u, err := strconv.ParseInt(part, 10, 64)
+		u, err := strconv.ParseInt(str, 10, 64)
 		if err != nil {
-			return result, fmt.Errorf("list item %q is not a int64 value: %w", part, err)
+			return result, fmt.Errorf("list item %q is not a int64 value: %w", str, err)
 		}
-		partVal = u
+		val = u
 	default:
 		return result, fmt.Errorf("unsupported type %T", v)
 	}
@@ -127,6 +129,6 @@ func PrimitiveFromString[T typ.StringRepresentable](part string) (T, error) {
 	// It returns an error like this:
 	//     "cannot use int64(u) (value of type int64) as T value in assignment"
 	// Until the Go type system supports this (if it does), reflection must be used here.
-	reflect.ValueOf(&result).Elem().Set(reflect.ValueOf(partVal))
+	reflect.ValueOf(&result).Elem().Set(reflect.ValueOf(val))
 	return result, nil
 }
