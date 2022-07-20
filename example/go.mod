@@ -2,7 +2,7 @@ module charmexample
 
 go 1.18
 
-replace github.com/mattolenik/go-charm => /Users/matt/go-charm
+replace github.com/mattolenik/go-charm => /Users/molenik/go-charm
 
 require (
 	github.com/k0kubun/pp/v3 v3.1.0
