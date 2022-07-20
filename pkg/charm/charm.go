@@ -12,7 +12,10 @@ import (
 	"github.com/mattolenik/go-charm/internal/typ"
 )
 
+type CommandAction func(c *Command) error
+
 type Command struct {
+	Action         CommandAction
 	Name           string
 	Usage          string
 	Examples       []string
@@ -25,8 +28,9 @@ type Command struct {
 	Visited        bool
 }
 
-func NewCommand(name, usage string) *Command {
+func NewCommand(name, usage string, action CommandAction) *Command {
 	c := &Command{
+		Action:         action,
 		Name:           name,
 		Usage:          usage,
 		typeConverters: map[reflect.Type]any{},
@@ -77,8 +81,9 @@ func (c *Command) String() string {
 	return fmt.Sprintf("Name: %q, Flags: %q, Subcommands: %d", c.Name, c.Flags, len(c.SubCommands))
 }
 
-func (c *Command) SubCommand(name, usage string) *Command {
+func (c *Command) SubCommand(name, usage string, action CommandAction) *Command {
 	subCommand := &Command{
+		Action:         action,
 		Name:           name,
 		Usage:          usage,
 		typeConverters: map[reflect.Type]any{},
@@ -127,20 +132,28 @@ func (c *Command) parse(args []string) error {
 // TreeString creates an indented, human readable multi-line string representation of the command tree.
 func (c *Command) TreeString(indent string) string {
 	sb := &strings.Builder{}
-	c.Walk(0, func(depth int, c *Command) {
+	c.Walk(func(depth int, c *Command) {
 		sb.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(indent, depth), c.String()))
 	})
 	return sb.String()
 }
 
-func (c *Command) Walk(depth int, fn func(int, *Command)) {
+func (c *Command) Walk(fn func(depth int, c *Command)) {
+	c.walk(0, fn)
+}
+
+func (c *Command) walk(depth int, fn func(int, *Command)) {
 	fn(depth, c)
 	for _, subCmd := range c.SubCommands {
 		fn(depth+1, subCmd)
 	}
 }
 
-func (c *Command) WalkVisited(depth int, fn func(int, *Command)) {
+func (c *Command) WalkVisited(fn func(depth int, c *Command)) {
+	c.walkVisited(0, fn)
+}
+
+func (c *Command) walkVisited(depth int, fn func(int, *Command)) {
 	fn(depth, c)
 	for _, subCmd := range c.SubCommands {
 		if subCmd.Visited {
@@ -152,11 +165,43 @@ func (c *Command) WalkVisited(depth int, fn func(int, *Command)) {
 func (c *Command) ChosenCommand() *Command {
 	chosen := c
 	deepest := -1
-	c.WalkVisited(0, func(depth int, c *Command) {
+	c.WalkVisited(func(depth int, c *Command) {
 		if depth > deepest {
 			deepest = depth
 			chosen = c
 		}
 	})
 	return chosen
+}
+
+func (c *Command) Exec() error {
+	if c.Action == nil {
+		return fmt.Errorf("command %q has no Action set, cannot execute it", c.Name)
+	}
+	return c.Action(c)
+}
+
+func (c *Command) Deepest(fn func(*Command) bool) *Command {
+	d := Command{}
+	deepest := 0
+	c.deepest(&d, &deepest, 0, fn)
+	return &d
+}
+
+func (c *Command) deepest(deepestMatch *Command, deepest *int, depth int, fn func(*Command) bool) {
+	if fn(c) {
+		*deepestMatch = *c
+		*deepest = depth
+	}
+	for _, sc := range c.SubCommands {
+		sc.deepest(deepestMatch, deepest, depth+1, fn)
+	}
+}
+
+// TODO: Rename this
+func (c *Command) ExecDeepest() error {
+	deepest := c.Deepest(func(c *Command) bool {
+		return c.Visited
+	})
+	return deepest.Exec()
 }

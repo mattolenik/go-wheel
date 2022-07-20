@@ -42,8 +42,9 @@ func TestVar(t *testing.T) {
 	var ui64 uint64
 	var emptySlice []int
 	var blankSlice []string
+	nopFn := func(c *Command) error { return nil }
 
-	c := NewCommand("app", "app usage")
+	c := NewCommand("app", "app usage", nopFn)
 
 	FlagVar(c, &s, "", "string", "")
 	FlagVar(c, &b, false, "bool", "")
