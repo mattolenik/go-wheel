@@ -29,7 +29,7 @@ func mainE() error {
 		return nil
 	})
 
-	_ = charm.FlagF(c, 5, "intval", "the int value")
+	_ = charm.FlagF(c, 5, false, "intval", "the int value")
 	err := c.Parse(os.Args[1:])
 	if err != nil {
 		return err

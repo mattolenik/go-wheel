@@ -20,41 +20,44 @@ type FlagType interface {
 	FlagPrimitive | typ.PrimitiveSlice | []time.Duration | any
 }
 
+// TODO: Required flags, exclusive or paired required flags, etc
 type Flag[T FlagType] struct {
-	Name    string
-	Usage   string
-	Default T
-	Value   *T
+	Name     string
+	Usage    string
+	Required bool
+	Default  T
+	Value    *T
 }
 
 func (f *Flag[T]) String() string {
-	return fmt.Sprintf("Name: %s, Usage: %s, Value: %v, Default: %v", f.Name, f.Usage, *f.Value, f.Default)
+	return fmt.Sprintf("Required: %t, Name: %s, Usage: %s, Value: %v, Default: %v", f.Required, f.Name, f.Usage, *f.Value, f.Default)
 }
 
 func (f *Flag[T]) Untyped() *Flag[any] {
 	v := any(f.Value)
 	return &Flag[any]{
-		Name:    f.Name,
-		Usage:   f.Usage,
-		Default: any(f.Default),
-		Value:   &v,
+		Name:     f.Name,
+		Usage:    f.Usage,
+		Required: f.Required,
+		Default:  any(f.Default),
+		Value:    &v,
 	}
 }
 
 func FlagVars[T FlagType](c *Command, flags ...Flag[T]) {
 	for _, flag := range flags {
-		FlagVar(c, flag.Value, flag.Default, flag.Name, flag.Usage)
+		FlagVar(c, flag.Value, flag.Default, flag.Required, flag.Name, flag.Usage)
 	}
 }
 
 // TODO: Rename after moving to flags package (maybe named options instead?)
-func FlagF[T FlagType](c *Command, defaultValue T, name, usage string) *T {
+func FlagF[T FlagType](c *Command, defaultValue T, required bool, name, usage string) *T {
 	var t T
-	f := FlagVar(c, &t, defaultValue, name, usage)
+	f := FlagVar(c, &t, defaultValue, required, name, usage)
 	return f.Value
 }
 
-func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage string) *Flag[T] {
+func FlagVar[T FlagType](c *Command, value *T, defaultValue T, required bool, name, usage string) *Flag[T] {
 	flags := c.flagSet
 	switch v := any(value).(type) {
 	case *int:
