@@ -139,3 +139,24 @@ func (c *Command) Walk(depth int, fn func(int, *Command)) {
 		fn(depth+1, subCmd)
 	}
 }
+
+func (c *Command) WalkVisited(depth int, fn func(int, *Command)) {
+	fn(depth, c)
+	for _, subCmd := range c.SubCommands {
+		if subCmd.Visited {
+			fn(depth+1, subCmd)
+		}
+	}
+}
+
+func (c *Command) ChosenCommand() *Command {
+	chosen := c
+	deepest := -1
+	c.WalkVisited(0, func(depth int, c *Command) {
+		if depth > deepest {
+			deepest = depth
+			chosen = c
+		}
+	})
+	return chosen
+}
