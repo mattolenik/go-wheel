@@ -1,7 +1,6 @@
 package charm
 
 import (
-	"flag"
 	"testing"
 	"time"
 
@@ -95,34 +94,6 @@ func TestVar(t *testing.T) {
 	assert.ElementsMatch([]bool{true, false, true}, slices.Bool)
 	assert.ElementsMatch([]string{"a", "b", "c"}, slices.String)
 	assert.ElementsMatch([]time.Duration{1 * time.Second, 2 * time.Minute, 3 * time.Hour}, slices.Duration)
-}
-
-func TestVarFlagReturn(t *testing.T) {
-	assert := assert.New(t)
-
-	args := []string{"-string=two", "-int=-10"}
-	flags := flag.NewFlagSet("test", flag.PanicOnError)
-
-	// TODO: seems like flags really shouldn't be coupled back to command? Find a better way to factor this
-	c := NewCommand("app", "app usage")
-	var i int
-	var s string
-	iFlag := FlagVar(c, &i, 1, "int", "")
-	sFlag := FlagVar(c, &s, "str", "string", "")
-
-	flags.Parse(args)
-
-	assert.Equal("two", s)
-	assert.Equal(int(-10), i)
-
-	assert.Equal(i, *iFlag.Value, "Flag's value doesn't equal parsed value")
-	assert.Equal(s, *sFlag.Value, "Flag's value doesn't equal parsed value")
-
-	assert.Equal(&i, iFlag.Value, "Flag's value pointer doesn't point at the parsed result")
-	assert.Equal(&s, sFlag.Value, "Flag's value pointer doesn't point at the parsed result")
-
-	assert.Equal(1, iFlag.Default, "int default value did not match")
-	assert.Equal("str", sFlag.Default, "string default value did not match")
 }
 
 var slices = struct {

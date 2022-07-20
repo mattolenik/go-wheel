@@ -28,15 +28,13 @@ func TestFindP(t *testing.T) {
 
 	ok, val := FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 2 })
 	assert.True(ok)
-	assert.Equal(2, val)
+	assert.Equal(2, *val)
 
-	ok, val = FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 4 })
+	ok, _ = FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 4 })
 	assert.False(ok)
-	assert.Equal(0, val)
 
-	ok, val = FindP([]int{}, func(i *int) bool { return *i == 4 })
+	ok, _ = FindP([]int{}, func(i *int) bool { return *i == 4 })
 	assert.False(ok)
-	assert.Equal(0, val)
 }
 
 func TestMap(t *testing.T) {

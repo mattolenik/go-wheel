@@ -9,8 +9,13 @@ import (
 	"github.com/mattolenik/go-charm/internal/typ"
 )
 
+// FlagPrimitives are types that are natively supported by Go's flag package.
+type FlagPrimitive interface {
+	int | int64 | uint | uint64 | float64 | bool | string | time.Duration
+}
+
 type FlagType interface {
-	string | time.Duration | typ.Primitive | typ.PrimitiveSlice | []time.Duration | any
+	FlagPrimitive | typ.PrimitiveSlice | []time.Duration | any
 }
 
 type FlagDefinition[T FlagType] struct {
@@ -32,6 +37,12 @@ func FlagVars[T FlagType](c *Command, flags ...FlagDefinition[T]) {
 	for _, flag := range flags {
 		FlagVar(c, flag.Value, flag.Default, flag.Name, flag.Usage)
 	}
+}
+
+func Flag[T FlagType](c *Command, defaultValue T, name, usage string) *T {
+	var t T
+	fd := FlagVar(c, &t, defaultValue, name, usage)
+	return fd.Value
 }
 
 func FlagVar[T FlagType](c *Command, value *T, defaultValue T, name, usage string) *FlagDefinition[T] {
