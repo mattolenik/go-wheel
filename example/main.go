@@ -54,7 +54,7 @@ func mainE() error {
 		Sl: []int{5, 9},
 		A:  "",
 	}
-	ft, err := Parse(dbf)
+	ft, err := Parse(c, dbf)
 	if err != nil {
 		return err
 	}
