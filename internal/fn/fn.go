@@ -1,7 +1,5 @@
 package fn
 
-import "reflect"
-
 // TODO: Make some kind of MapE, where function f can return (R, error)?
 // Should Map use the ok pattern, returning false when items is false?
 
@@ -39,7 +37,14 @@ func FindP[T any](items []T, predicate func(*T) bool) (found bool, value *T) {
 	return
 }
 
-func TypeOf[T any]() reflect.Type {
-	var t T
-	return reflect.TypeOf(any(t))
+func Ptr[T any](v T) *T {
+	return &v
+}
+
+func LookupOrDefault[K comparable, V any](lookupFunc func(key K) (value V, ok bool), key K, defaultVal V) V {
+	v, ok := lookupFunc(key)
+	if ok {
+		return v
+	}
+	return defaultVal
 }

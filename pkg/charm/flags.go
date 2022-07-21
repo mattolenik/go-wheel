@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/mattolenik/go-charm/internal/fn"
-	"github.com/mattolenik/go-charm/internal/typ"
+	"github.com/mattolenik/go-charm/internal/refract"
+	"github.com/mattolenik/go-charm/pkg/typ"
 )
 
 // TODO: Consider renaming types throughout this file
@@ -84,7 +84,7 @@ func FlagVar[T FlagType](c *Command, value *T, defaultValue T, required bool, na
 		}
 		flagSetter, ok := cv.(FlagSetterFunc[T])
 		if !ok {
-			panic(fmt.Errorf("expected converter for %q to have type %q but found %q instead", t, fn.TypeOf[FlagSetterFunc[T]](), reflect.TypeOf(flagSetter)))
+			panic(fmt.Errorf("expected converter for %q to have type %q but found %q instead", t, refract.TypeOf[FlagSetterFunc[T]](), reflect.TypeOf(flagSetter)))
 		}
 		fv := &flagValueImpl{
 			func(s string) error {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mattolenik/go-charm/internal/typ"
+	"github.com/mattolenik/go-charm/pkg/typ"
 )
 
 // TODO: Add tests for this package
@@ -21,7 +21,7 @@ func FromDelimetedList[T typ.StringRepresentable](str, delim string) ([]T, error
 	resultValue := reflect.ValueOf(result)
 	for i, part := range parts {
 		part = strings.TrimSpace(part)
-		v, err := Parse[T](part)
+		v, err := typ.Parse[T](part)
 		if err != nil {
 			return nil, fmt.Errorf("list item %q is not a valid value: %w", part, err)
 		}

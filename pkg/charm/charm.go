@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/mattolenik/go-charm/internal/fn"
-	"github.com/mattolenik/go-charm/internal/typ"
+	"github.com/mattolenik/go-charm/internal/refract"
 	"github.com/mattolenik/go-charm/pkg/twine"
+	"github.com/mattolenik/go-charm/pkg/typ"
 )
 
 type CommandAction func(c *Command) error
@@ -66,7 +67,7 @@ func listConverter[T typ.StringRepresentable](s string, a *[]T) error {
 type FlagSetterFunc[T any] func(stringValue string, value *T) error
 
 func RegisterTypeConverter[T any](c *Command, set FlagSetterFunc[T]) {
-	c.root.typeConverters[fn.TypeOf[T]()] = set
+	c.root.typeConverters[refract.TypeOf[T]()] = set
 }
 
 func (c *Command) FindTypeConverter(t reflect.Type) (any, bool) {
