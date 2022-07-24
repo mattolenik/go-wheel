@@ -25,8 +25,13 @@ func main() {
 	fmt.Fprintln(os.Stderr, err)
 }
 
+// Flag is bool and others are options?
+type Flag struct {
+}
+
 func mainE() error {
 	args := []string{"-abc=123", "-def", "-x", "-abc=5", "-y", "456"}
+	// Pass in multimap instead of receiving, pass in expected flags and flag info?
 	flags, remainingArgs := wheel.ParseFlags(args)
 	fmt.Println("Flags:")
 	pp.Println(flags)
