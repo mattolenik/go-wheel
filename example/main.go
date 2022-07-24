@@ -27,7 +27,7 @@ func main() {
 
 func mainE() error {
 	args := []string{"-abc=123", "-def", "-x", "-abc=5", "-y", "456"}
-	flags, remainingArgs := wheel.Parse(args)
+	flags, remainingArgs := wheel.ParseFlags(args)
 	fmt.Println("Flags:")
 	pp.Println(flags)
 	fmt.Println()

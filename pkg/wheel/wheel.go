@@ -7,7 +7,7 @@ import (
 	"github.com/mattolenik/go-charm/internal/fn"
 )
 
-func Parse(args []string) (fn.MultiMap[string, string], []string) {
+func ParseFlags(args []string) (fn.MultiMap[string, string], []string) {
 	if len(args) == 0 {
 		return fn.MultiMap[string, string]{}, args
 	}
