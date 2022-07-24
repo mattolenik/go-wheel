@@ -5,10 +5,17 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/k0kubun/pp/v3"
+	ppv3 "github.com/k0kubun/pp/v3"
 	"github.com/mattolenik/go-charm/pkg/charm"
 	"github.com/mattolenik/go-charm/pkg/typ"
+	"github.com/mattolenik/go-charm/pkg/wheel"
 )
+
+var pp *ppv3.PrettyPrinter = ppv3.New()
+
+func init() {
+	pp.SetExportedOnly(true)
+}
 
 func main() {
 	err := mainE()
@@ -19,55 +26,73 @@ func main() {
 }
 
 func mainE() error {
-	pp := pp.New()
-	pp.SetExportedOnly(true)
-
-	c := charm.NewCommand("dbdrawer", "dbd something something", func(c *charm.Command) error {
-		fmt.Println("dbdrawer impl here")
-		return nil
-	})
-	_ = c.SubCommand("sub1", "subcommand 1", func(c *charm.Command) error {
-		fmt.Println("sub1 impl here")
-		return nil
-	})
-	_ = c.SubCommand("sub2", "subcommand 2", func(c *charm.Command) error {
-		fmt.Println("sub2 impl here")
-		return nil
-	})
-
-	//_ = charm.FlagF(c, []int{}, false, "sl", "a slice")
-	//_ = charm.FlagF(c, "", false, "a", "a string")
-
-	//err := c.Parse(os.Args[1:])
-	//if err != nil {
-	//	return err
-	//}
-
-	//_ = charm.FlagF(c, 5, false, "intval", "the int value")
-	//err = c.Parse(os.Args[1:])
-	//if err != nil {
-	//	return err
-	//}
-	//return c.ExecDeepest()
-
-	dbf := &DbdrawerFlags{
-		Sl: []int{5, 9},
-		A:  "",
-	}
-	err := Parse(c, dbf)
-	if err != nil {
-		return err
-	}
-	pp.Println(dbf)
-	err = c.Parse(os.Args[1:])
-	if err != nil {
-		return err
-	}
-	// pp.Println(ft)
-	// fmt.Println("----------------------------------------------------")
-	// pp.Println(c)
+	args := []string{"-abc=123", "-def", "-x", "-abc=5", "-y", "456"}
+	flags, remainingArgs := wheel.Parse(args)
+	fmt.Println("Flags:")
+	pp.Println(flags)
+	fmt.Println()
+	fmt.Println("Remaining args:")
+	pp.Println(remainingArgs)
 	return nil
 }
+
+func Index[T any](slice []T, i int) (v T, ok bool) {
+	if i >= len(slice) {
+		return
+	}
+	return slice[i], true
+}
+
+// func mainE() error {
+// 	pp := pp.New()
+// 	pp.SetExportedOnly(true)
+
+// 	c := charm.NewCommand("dbdrawer", "dbd something something", func(c *charm.Command) error {
+// 		fmt.Println("dbdrawer impl here")
+// 		return nil
+// 	})
+// 	_ = c.SubCommand("sub1", "subcommand 1", func(c *charm.Command) error {
+// 		fmt.Println("sub1 impl here")
+// 		return nil
+// 	})
+// 	_ = c.SubCommand("sub2", "subcommand 2", func(c *charm.Command) error {
+// 		fmt.Println("sub2 impl here")
+// 		return nil
+// 	})
+
+// 	//_ = charm.FlagF(c, []int{}, false, "sl", "a slice")
+// 	//_ = charm.FlagF(c, "", false, "a", "a string")
+
+// 	//err := c.Parse(os.Args[1:])
+// 	//if err != nil {
+// 	//	return err
+// 	//}
+
+// 	//_ = charm.FlagF(c, 5, false, "intval", "the int value")
+// 	//err = c.Parse(os.Args[1:])
+// 	//if err != nil {
+// 	//	return err
+// 	//}
+// 	//return c.ExecDeepest()
+
+// 	dbf := &DbdrawerFlags{
+// 		Sl: []int{5, 9},
+// 		A:  "",
+// 	}
+// 	err := Parse(c, dbf)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	pp.Println(dbf)
+// 	err = c.Parse(os.Args[1:])
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// pp.Println(ft)
+// 	// fmt.Println("----------------------------------------------------")
+// 	// pp.Println(c)
+// 	return nil
+// }
 
 type DbdrawerFlags struct {
 	Sl []int  `flag:"sl" desc:"Int slicerydicer" usage:"some information usage might go here"`
