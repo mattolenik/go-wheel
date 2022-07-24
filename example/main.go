@@ -54,24 +54,24 @@ func mainE() error {
 		Sl: []int{5, 9},
 		A:  "",
 	}
-	ft, err := Parse(c, dbf)
+	err := Parse(c, dbf)
 	if err != nil {
 		return err
 	}
-
+	pp.Println(dbf)
 	err = c.Parse(os.Args[1:])
 	if err != nil {
 		return err
 	}
-	pp.Println(ft)
-	fmt.Println("----------------------------------------------------")
-	pp.Println(c)
+	// pp.Println(ft)
+	// fmt.Println("----------------------------------------------------")
+	// pp.Println(c)
 	return nil
 }
 
 type DbdrawerFlags struct {
 	Sl []int  `flag:"sl" desc:"Int slicerydicer" usage:"some information usage might go here"`
-	A  string `flag:"a" required:"true"`
+	A  string `flag:"a" desc:"test flag" usage:"usage here" required:"true"`
 }
 
 type FlagTags struct {
@@ -84,16 +84,24 @@ func (ft *FlagTags) String() string {
 	return fmt.Sprintf("Flag: %q, Desc: %q, Usage: %q, Required: %v", *ft.Flag, *ft.Desc, *ft.Usage, ft.Required)
 }
 
-// TODO: this whole thing is mistakenly relating the flag tags to entire struct and not each field, fix and clarify this
+// p := reflect.New(reflect.TypeOf(v))
+// p.Elem().Set(reflect.ValueOf(v))
+
+// return p.Interface()
+
 // Parse takes all the tags from all the fields of the given struct and assigns them to the corresponding fields of a FlagTags struct.
-func Parse(c *charm.Command, struc any) (map[*reflect.StructField]FlagTags, error) {
+func Parse(c *charm.Command, struc any) error {
 	strucType := reflect.TypeOf(struc).Elem()
+	structVal := reflect.ValueOf(struc).Elem()
 	if strucType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("func FlagTags.Parse expected a value of kind struct, instead got %s", strucType.Kind())
+		return fmt.Errorf("func FlagTags.Parse expected a value of kind struct, instead got %s", strucType.Kind())
 	}
-	result := map[*reflect.StructField]FlagTags{}
 	for i := 0; i < strucType.NumField(); i++ {
+		var aVal *any
 		f := strucType.Field(i)
+		sv := structVal.Field(i)
+		svi := sv.Interface()
+		aVal = &svi
 
 		required := false
 		requiredTag, ok := f.Tag.Lookup("required")
@@ -101,17 +109,18 @@ func Parse(c *charm.Command, struc any) (map[*reflect.StructField]FlagTags, erro
 			var err error
 			required, err = typ.Parse[bool](requiredTag)
 			if err != nil {
-				return nil, fmt.Errorf("value %q is not a bool", requiredTag)
+				return fmt.Errorf("value %q is not a bool", requiredTag)
 			}
 		}
-		result[&f] = FlagTags{
+		ftgs := FlagTags{
 			Flag:     Ptr(f.Tag.Get("flag")),
 			Desc:     Ptr(f.Tag.Get("desc")),
 			Usage:    Ptr(f.Tag.Get("usage")),
 			Required: required,
 		}
+		charm.FlagVar(c, aVal, nil, ftgs.Required, *ftgs.Flag, *ftgs.Usage)
 	}
-	return result, nil
+	return nil
 }
 
 func Ptr[T any](v T) *T {
