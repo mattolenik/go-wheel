@@ -2,12 +2,116 @@ package wheel
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/mattolenik/go-charm/internal/fn"
+	"github.com/mattolenik/go-charm/internal/refract"
 )
 
-func ParseFlags(args []string) (fn.MultiMap[string, string], []string) {
+type CommandLineType interface {
+	int | bool | string
+}
+
+func NewOption[T CommandLineType](name, usage string, defaultValue T) *Option {
+	return &Option{
+		Name:  name,
+		Usage: usage,
+		typ:   reflect.TypeOf(defaultValue),
+	}
+}
+
+type Option struct {
+	Name     string
+	Usage    string
+	Required bool
+	typ      reflect.Type
+}
+
+type Command struct {
+	Name        string
+	Description string
+	Usage       string
+	Examples    []string
+	Options     []*Option
+	SubCommands []*Command
+	// TODO: make arg parsing strongly typed
+	Args    []string
+	parent  *Command
+	Invoked bool
+}
+
+func NewCommand(name, usage, description string, examples []string) *Command {
+	c := &Command{
+		Name:        name,
+		Usage:       usage,
+		Description: description,
+		Examples:    examples,
+	}
+	return c
+}
+
+func (c *Command) SubCommand(name, usage, description string, examples []string) *Command {
+	sc := &Command{
+		Name:        name,
+		Usage:       usage,
+		Description: description,
+		Examples:    examples,
+		parent:      c,
+	}
+	c.SubCommands = append(c.SubCommands, sc)
+	return sc
+}
+
+func (c *Command) Parse(args []string) error {
+	opts, remaining := ParseOptions(args)
+	for opt, values := range opts {
+		supportedOpts := fn.Filter(c.Options, func(o **Option) bool { return (*o).Name == opt })
+		if len(supportedOpts) == 0 {
+			return fmt.Errorf("unsupported option %q, did you mean <TODO: insert help here>?", opt)
+		}
+		if len(supportedOpts) > 1 {
+			// This is a panic rather than an error because duplicate options indicate a serious bug in the program.
+			panic(fmt.Errorf("duplicate option found, %q was defined %d times, must be only once", opt, len(supportedOpts)))
+		}
+		o := *supportedOpts[0]
+		if len(values) == 0 {
+			if o.typ == refract.TypeOf[bool]() {
+				fmt.Println("TODO: bind to bool here")
+				continue
+			}
+			return fmt.Errorf("option %q requires a value", opt)
+		}
+		if len(values) > 1 {
+			if o.typ.Kind() != reflect.Slice {
+				return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
+			}
+
+			continue
+		}
+	}
+	if len(remaining) == 0 {
+		return nil
+	}
+	firstRemaining := remaining[0]
+	subcmd := fn.Filter(c.SubCommands, func(sc **Command) bool { return (*sc).Name == firstRemaining })
+	if len(subcmd) == 0 {
+		// TODO: make arg parsing strongly typed
+		c.Args = remaining
+		return nil
+	}
+	if len(subcmd) > 1 {
+		panic(fmt.Errorf("duplicate command found, %q was defined %d times, must be only once", firstRemaining, len(subcmd)))
+	}
+	return (*subcmd[0]).Parse(remaining[1:])
+}
+
+// ParseOptions takes CLI arguments and returns a mapping of options to values, plus the remaining, non-option arguments.
+// Example:
+//   []string{"-a=1", "-b=2", "-c=3", "-b=4", "arg1", "arg2", "arg3"}
+//     becomes:
+//   map[string]Set[string]{"a":{"1"}, "b":{"2", "4"}, "c":{"3"}}, []string{"arg1", "arg2", "arg3"}
+func ParseOptions(args []string) (fn.MultiMap[string, string], []string) {
 	if len(args) == 0 {
 		return fn.MultiMap[string, string]{}, args
 	}
