@@ -29,16 +29,22 @@ func Find[T any](items []T, predicate func(T) bool) (found bool, value T) {
 }
 
 func FindP[T any](items []T, predicate func(*T) bool) (found bool, value *T) {
-	for _, i := range items {
-		if predicate(&i) {
-			return true, &i
+	for i := range items {
+		if predicate(&items[i]) {
+			return true, &items[i]
 		}
 	}
 	return
 }
 
-func Ptr[T any](v T) *T {
-	return &v
+func Filter[T any](items []T, predicate func(*T) bool) []*T {
+	result := []*T{}
+	for i := range items {
+		if predicate(&items[i]) {
+			result = append(result, &items[i])
+		}
+	}
+	return result
 }
 
 func LookupOrDefault[K comparable, V any](lookupFunc func(key K) (value V, ok bool), key K, defaultVal V) V {
@@ -93,4 +99,8 @@ func (s Set[T]) Values() []T {
 		values = append(values, item)
 	}
 	return values
+}
+
+func Ptr[T any](v T) *T {
+	return &v
 }

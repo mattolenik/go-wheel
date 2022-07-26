@@ -79,3 +79,14 @@ func TestSet(t *testing.T) {
 	assert.False(s.Remove(10))
 	assert.ElementsMatch([]int{11}, s.Values())
 }
+
+func TestFilter(t *testing.T) {
+	assert := assert.New(t)
+	items := []int{1, 2, 3, 4}
+	expected := []int{3, 4}
+
+	filtered := Filter(items, func(i *int) bool { return *i > 2 })
+	assert.ElementsMatch(expected, Map(filtered, func(i *int) int { return *i }))
+
+	assert.ElementsMatch([]*int{}, Filter([]int{}, func(i *int) bool { return true }))
+}
