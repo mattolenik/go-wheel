@@ -13,7 +13,7 @@ type CommandLineType interface {
 	int | bool | string
 }
 
-func NewOption[T CommandLineType](name, usage string, defaultValue T) *Option {
+func NewOption[T CommandLineType](name, description, usage string, defaultValue T) *Option {
 	return &Option{
 		Name:  name,
 		Usage: usage,
@@ -49,6 +49,17 @@ func NewCommand(name, usage, description string, examples []string) *Command {
 		Examples:    examples,
 	}
 	return c
+}
+
+func AddOption[T CommandLineType](c *Command, required bool, opt, description, usage string) *Option {
+	o := &Option{
+		Name:     opt,
+		Required: required,
+		Usage:    usage,
+		typ:      refract.TypeOf[string](),
+	}
+	c.Options = append(c.Options, o)
+	return o
 }
 
 func (c *Command) SubCommand(name, usage, description string, examples []string) *Command {
