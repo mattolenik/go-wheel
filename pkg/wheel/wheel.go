@@ -10,21 +10,14 @@ import (
 )
 
 type CommandLineType interface {
-	int | bool | string
+	int | bool | string | any
 }
 
-func NewOption[T CommandLineType](name, description, usage string, defaultValue T) *Option {
-	return &Option{
-		Name:  name,
-		Usage: usage,
-		typ:   reflect.TypeOf(defaultValue),
-	}
-}
-
-type Option struct {
+type Option[T CommandLineType] struct {
 	Name     string
 	Usage    string
 	Required bool
+	Value    *T
 	typ      reflect.Type
 }
 
@@ -33,7 +26,7 @@ type Command struct {
 	Description string
 	Usage       string
 	Examples    []string
-	Options     []*Option
+	Options     []*Option[any]
 	SubCommands []*Command
 	// TODO: make arg parsing strongly typed
 	Args    []string
@@ -51,14 +44,22 @@ func NewCommand(name, usage, description string, examples []string) *Command {
 	return c
 }
 
-func AddOption[T CommandLineType](c *Command, required bool, opt, description, usage string) *Option {
-	o := &Option{
-		Name:     opt,
+func AddOption[T CommandLineType](c *Command, required bool, defaultValue *T, name, usage string) *Option[T] {
+	o := &Option[T]{
+		Name:     name,
 		Required: required,
 		Usage:    usage,
-		typ:      refract.TypeOf[string](),
+		Value:    defaultValue,
+		typ:      refract.TypeOf[T](),
 	}
-	c.Options = append(c.Options, o)
+	oa := &Option[any]{
+		Name:     o.Name,
+		Required: o.Required,
+		Usage:    o.Usage,
+		Value:    o.Value,
+		typ:      o.typ,
+	}
+	c.Options = append(c.Options, oa)
 	return o
 }
 
