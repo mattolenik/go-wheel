@@ -75,6 +75,13 @@ func (c *Command) Parse(args []string) error {
 			panic(fmt.Errorf("duplicate option found, %q was defined %d times, must be only once", opt, len(supportedOpts)))
 		}
 		o := *supportedOpts[0]
+		if o.typ.Kind() == reflect.Slice {
+			if len(values) == 0 {
+				return fmt.Errorf("option %q requires a value", opt)
+			}
+			// TODO: convert values to the type needed by o.typ. Use that register converter pattern here
+			continue
+		}
 		if len(values) == 0 {
 			if o.typ == refract.TypeOf[bool]() {
 				fmt.Println("TODO: bind to bool here")
@@ -82,12 +89,12 @@ func (c *Command) Parse(args []string) error {
 			}
 			return fmt.Errorf("option %q requires a value", opt)
 		}
-		if len(values) > 1 {
-			if o.typ.Kind() != reflect.Slice {
-				return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
-			}
-
+		if len(values) == 1 {
+			// TODO: convert single value here
 			continue
+		}
+		if len(values) > 1 {
+			return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
 		}
 	}
 	if len(remaining) == 0 {
