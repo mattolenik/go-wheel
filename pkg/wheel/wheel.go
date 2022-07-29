@@ -11,8 +11,12 @@ import (
 	"github.com/mattolenik/go-charm/internal/refract"
 )
 
+type CommandLineSliceType interface {
+	[]bool | []int | []int8 | []int16 | []int32 | []int64 | []uint | []uint8 | []uint16 | []uint32 | []uint64 | []time.Duration | []string | []any
+}
+
 type CommandLineType interface {
-	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | any
+	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | CommandLineSliceType | any
 }
 
 type Option interface {
@@ -90,7 +94,7 @@ func AddOption[T CommandLineType](c *Command, required bool, defaultValue *T, na
 		DefaultValue: defaultValue,
 		TypedValue:   &value,
 		typ:          refract.TypeOf[T](),
-		setter:       convert(&value),
+		setter:       converter(&value),
 	}
 	c.Options = append(c.Options, o)
 	return o
@@ -122,9 +126,11 @@ func (c *Command) Parse(args []string) error {
 		o := *supportedOpts[0]
 		if o.Type().Kind() == reflect.Slice {
 			if len(values) == 0 {
-				return fmt.Errorf("option %q requires a value", opt)
+				return fmt.Errorf("option %q requires at least one value", opt)
 			}
-			// TODO: convert values to the type needed by o.typ. Use that register converter pattern here
+			for v := range values {
+				o.Setter()(v)
+			}
 			continue
 		}
 		if len(values) == 0 {
@@ -212,8 +218,22 @@ func Index[T any](slice []T, i int) (v T, ok bool) {
 
 var converters = map[reflect.Type]func(string) error{}
 
-func convert[T CommandLineType](v *T) func(string) error {
-	switch any(v).(type) {
+func converter[T CommandLineType](v *T) func(string) error {
+	switch v := any(v).(type) {
+	case *[]T:
+		conversionFuncs := make([]func(string) error, len(*v))
+		for i, item := range *v {
+			f := converter(&item)
+			conversionFuncs[i] = f
+		}
+		return func(s string) error {
+			for _, f := range conversionFuncs {
+				if err := f(s); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 	case *bool:
 		return func(s string) error {
 			b, err := strconv.ParseBool(s)

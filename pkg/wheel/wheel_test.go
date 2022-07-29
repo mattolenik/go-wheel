@@ -32,7 +32,7 @@ func TestParse(t *testing.T) {
 func TestConvert(t *testing.T) {
 	assert := assert.New(t)
 	var x bool
-	vf := convert(&x)
+	vf := converter(&x)
 	assert.NoError(vf("false"))
 	assert.Equal(false, x)
 	assert.NoError(vf("1"))
