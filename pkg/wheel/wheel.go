@@ -210,7 +210,7 @@ func Index[T any](slice []T, i int) (v T, ok bool) {
 	return slice[i], true
 }
 
-var converters = map[string]func(string) error{}
+var converters = map[reflect.Type]func(string) error{}
 
 func convert[T CommandLineType](v *T) func(string) error {
 	switch any(v).(type) {
@@ -220,8 +220,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(b))
-
+			reflect.ValueOf(v).Elem().SetBool(b)
 			return nil
 		}
 	case *int:
@@ -230,7 +229,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetInt(int64(i))
 			return nil
 		}
 	case *int8:
@@ -239,7 +238,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetInt(int64(i))
 			return nil
 		}
 	case *int16:
@@ -248,7 +247,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetInt(int64(i))
 			return nil
 		}
 	case *int32:
@@ -257,7 +256,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetInt(int64(i))
 			return nil
 		}
 	case *int64:
@@ -266,7 +265,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetInt(int64(i))
 			return nil
 		}
 	case *uint:
@@ -275,7 +274,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetUint(uint64(i))
 			return nil
 		}
 	case *uint8:
@@ -284,7 +283,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetUint(uint64(i))
 			return nil
 		}
 	case *uint16:
@@ -293,7 +292,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetUint(uint64(i))
 			return nil
 		}
 	case *uint32:
@@ -302,7 +301,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetUint(uint64(i))
 			return nil
 		}
 	case *uint64:
@@ -311,7 +310,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetUint(uint64(i))
 			return nil
 		}
 	case *float32:
@@ -320,7 +319,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetFloat(float64(i))
 			return nil
 		}
 	case *float64:
@@ -329,7 +328,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			reflect.ValueOf(v).Elem().SetFloat(float64(i))
 			return nil
 		}
 	case *time.Duration:
@@ -338,7 +337,7 @@ func convert[T CommandLineType](v *T) func(string) error {
 			if err != nil {
 				return err
 			}
-			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(d))
+			reflect.ValueOf(v).Elem().SetInt(int64(d))
 			return nil
 		}
 	case *string:
