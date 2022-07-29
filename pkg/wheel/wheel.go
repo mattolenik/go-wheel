@@ -3,22 +3,59 @@ package wheel
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mattolenik/go-charm/internal/fn"
 	"github.com/mattolenik/go-charm/internal/refract"
 )
 
 type CommandLineType interface {
-	int | bool | string | any
+	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | any
 }
 
-type Option[T CommandLineType] struct {
-	Name     string
-	Usage    string
-	Required bool
-	Value    *T
-	typ      reflect.Type
+type Option interface {
+	Name() string
+	Usage() string
+	Required() bool
+	Type() reflect.Type
+	Value() any
+	Setter() func(string) error
+}
+
+type TypedOption[T CommandLineType] struct {
+	name         string
+	usage        string
+	required     bool
+	TypedValue   *T
+	DefaultValue *T
+	typ          reflect.Type
+	setter       func(string) error
+}
+
+func (o *TypedOption[T]) Name() string {
+	return o.name
+}
+
+func (o *TypedOption[T]) Usage() string {
+	return o.usage
+}
+
+func (o *TypedOption[T]) Required() bool {
+	return o.required
+}
+
+func (o *TypedOption[T]) Value() any {
+	return o.TypedValue
+}
+
+func (o *TypedOption[T]) Type() reflect.Type {
+	return o.typ
+}
+
+func (o *TypedOption[T]) Setter() func(string) error {
+	return o.setter
 }
 
 type Command struct {
@@ -26,7 +63,7 @@ type Command struct {
 	Description string
 	Usage       string
 	Examples    []string
-	Options     []*Option[any]
+	Options     []Option
 	SubCommands []*Command
 	// TODO: make arg parsing strongly typed
 	Args    []string
@@ -44,22 +81,18 @@ func NewCommand(name, usage, description string, examples []string) *Command {
 	return c
 }
 
-func AddOption[T CommandLineType](c *Command, required bool, defaultValue *T, name, usage string) *Option[T] {
-	o := &Option[T]{
-		Name:     name,
-		Required: required,
-		Usage:    usage,
-		Value:    defaultValue,
-		typ:      refract.TypeOf[T](),
+func AddOption[T CommandLineType](c *Command, required bool, defaultValue *T, name, usage string) *TypedOption[T] {
+	var value T
+	o := &TypedOption[T]{
+		name:         name,
+		required:     required,
+		usage:        usage,
+		DefaultValue: defaultValue,
+		TypedValue:   &value,
+		typ:          refract.TypeOf[T](),
+		setter:       convert(&value),
 	}
-	oa := &Option[any]{
-		Name:     o.Name,
-		Required: o.Required,
-		Usage:    o.Usage,
-		Value:    o.Value,
-		typ:      o.typ,
-	}
-	c.Options = append(c.Options, oa)
+	c.Options = append(c.Options, o)
 	return o
 }
 
@@ -78,7 +111,7 @@ func (c *Command) SubCommand(name, usage, description string, examples []string)
 func (c *Command) Parse(args []string) error {
 	opts, remaining := ParseOptions(args)
 	for opt, values := range opts {
-		supportedOpts := fn.Filter(c.Options, func(o **Option) bool { return (*o).Name == opt })
+		supportedOpts := fn.Filter(c.Options, func(o *Option) bool { return (*o).Name() == opt })
 		if len(supportedOpts) == 0 {
 			return fmt.Errorf("unsupported option %q, did you mean <TODO: insert help here>?", opt)
 		}
@@ -87,7 +120,7 @@ func (c *Command) Parse(args []string) error {
 			panic(fmt.Errorf("duplicate option found, %q was defined %d times, must be only once", opt, len(supportedOpts)))
 		}
 		o := *supportedOpts[0]
-		if o.typ.Kind() == reflect.Slice {
+		if o.Type().Kind() == reflect.Slice {
 			if len(values) == 0 {
 				return fmt.Errorf("option %q requires a value", opt)
 			}
@@ -95,15 +128,17 @@ func (c *Command) Parse(args []string) error {
 			continue
 		}
 		if len(values) == 0 {
-			if o.typ == refract.TypeOf[bool]() {
-				fmt.Println("TODO: bind to bool here")
+			if o.Type() == refract.TypeOf[bool]() {
+				o.Setter()("true")
 				continue
 			}
 			return fmt.Errorf("option %q requires a value", opt)
 		}
 		if len(values) == 1 {
-			// TODO: convert single value here
-			continue
+			v := values.Values()[0]
+			if err := o.Setter()(v); err != nil {
+				return fmt.Errorf("option %q: %w", opt, err)
+			}
 		}
 		if len(values) > 1 {
 			return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
@@ -173,4 +208,146 @@ func Index[T any](slice []T, i int) (v T, ok bool) {
 		return
 	}
 	return slice[i], true
+}
+
+var converters = map[string]func(string) error{}
+
+func convert[T CommandLineType](v *T) func(string) error {
+	switch any(v).(type) {
+	case *bool:
+		return func(s string) error {
+			b, err := strconv.ParseBool(s)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(b))
+
+			return nil
+		}
+	case *int:
+		return func(s string) error {
+			i, err := strconv.Atoi(s)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *int8:
+		return func(s string) error {
+			i, err := strconv.ParseInt(s, 10, 8)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *int16:
+		return func(s string) error {
+			i, err := strconv.ParseInt(s, 10, 16)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *int32:
+		return func(s string) error {
+			i, err := strconv.ParseInt(s, 10, 32)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *int64:
+		return func(s string) error {
+			i, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *uint:
+		return func(s string) error {
+			i, err := strconv.ParseUint(s, 10, 0)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *uint8:
+		return func(s string) error {
+			i, err := strconv.ParseUint(s, 10, 8)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *uint16:
+		return func(s string) error {
+			i, err := strconv.ParseUint(s, 10, 16)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *uint32:
+		return func(s string) error {
+			i, err := strconv.ParseUint(s, 10, 32)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *uint64:
+		return func(s string) error {
+			i, err := strconv.ParseUint(s, 10, 64)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *float32:
+		return func(s string) error {
+			i, err := strconv.ParseFloat(s, 32)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *float64:
+		return func(s string) error {
+			i, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(i))
+			return nil
+		}
+	case *time.Duration:
+		return func(s string) error {
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return err
+			}
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(d))
+			return nil
+		}
+	case *string:
+		return func(s string) error {
+			reflect.ValueOf(v).Elem().SetString(s)
+			return nil
+		}
+	default:
+		// TODO: handle other types
+	}
+	panic(fmt.Errorf("unsupported type %T", v))
 }
