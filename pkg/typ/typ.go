@@ -12,8 +12,12 @@ type StringRepresentable interface {
 	Primitive | time.Duration | string
 }
 
+type StringParsable interface {
+	FromString(string) error
+}
+
 type Primitive interface {
-	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64 | bool
+	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
 }
 
 type PrimitiveSlice interface {
@@ -110,7 +114,15 @@ func Parse[T StringRepresentable](str string) (T, error) {
 		}
 		val = u
 	default:
-		return result, fmt.Errorf("unsupported type %T", v)
+		z, ok := v.(StringParsable)
+		if !ok {
+			return result, fmt.Errorf("unsupported type %T", v)
+		}
+		err = z.FromString(str)
+		if err != nil {
+			return result, fmt.Errorf("string %q is not a %T value: %w", str, v, err)
+		}
+		return result, nil
 	}
 	// Reflection required here because Go won't allow setting of a generic value from within a
 	// type switch like the one above.

@@ -29,6 +29,7 @@ func TestParse(t *testing.T) {
 	pp.Println(c)
 }
 
+// TODO: More thorough tests and parameterization.
 func TestConvert(t *testing.T) {
 	assert := assert.New(t)
 	var x bool
@@ -44,9 +45,65 @@ func TestConvert(t *testing.T) {
 	assert.Contains(j, "a")
 	assert.Equal(float64(1), j["a"])
 
-	si := []int{}
-	sii := converter(&si)
-	err := sii("1,2,3")
-	assert.NoError(err)
-	assert.Equal([]int{1, 2, 3}, si)
+	{
+		si := []int{}
+		c := converter(&si)
+		assert.NoError(c("1,-2,3"))
+		assert.Equal([]int{1, -2, 3}, si)
+	}
+	{
+		si := []int8{}
+		c := converter(&si)
+		assert.NoError(c("1, -2, 3"))
+		assert.Equal([]int8{1, -2, 3}, si)
+	}
+	{
+		si := []int16{}
+		c := converter(&si)
+		assert.NoError(c("1,-2,3"))
+		assert.Equal([]int16{1, -2, 3}, si)
+	}
+	{
+		si := []int32{}
+		c := converter(&si)
+		assert.NoError(c("1,-2,3"))
+		assert.Equal([]int32{1, -2, 3}, si)
+	}
+	{
+		si := []int64{}
+		c := converter(&si)
+		assert.NoError(c("1,-2,3"))
+		assert.Equal([]int64{1, -2, 3}, si)
+	}
+
+	{
+		si := []uint{}
+		c := converter(&si)
+		assert.NoError(c("1,2,3"))
+		assert.Equal([]uint{1, 2, 3}, si)
+	}
+	{
+		si := []uint8{}
+		c := converter(&si)
+		assert.NoError(c("1,2,3"))
+		assert.Equal([]uint8{1, 2, 3}, si)
+	}
+	{
+		si := []uint16{}
+		c := converter(&si)
+		assert.NoError(c("1 , 2 , 3"))
+		assert.Equal([]uint16{1, 2, 3}, si)
+	}
+	{
+		si := []uint32{}
+		c := converter(&si)
+		assert.NoError(c("1,2,3"))
+		assert.Equal([]uint32{1, 2, 3}, si)
+	}
+	{
+		si := []uint64{}
+		c := converter(&si)
+		assert.NoError(c("1,2,3"))
+		assert.Equal([]uint64{1, 2, 3}, si)
+	}
 }

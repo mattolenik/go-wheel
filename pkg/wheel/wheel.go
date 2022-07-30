@@ -40,12 +40,16 @@ func (j JSON) FromString(s string) error {
 	return nil
 }
 
-type CommandLineSliceType interface {
+type CommandLineSlice interface {
 	[]bool | []int | []int8 | []int16 | []int32 | []int64 | []uint | []uint8 | []uint16 | []uint32 | []uint64 | []time.Duration | []string | []any
 }
 
+type CommandLinePrimitive interface {
+	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string
+}
+
 type CommandLineType interface {
-	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | CommandLineSliceType | JSON | any
+	CommandLinePrimitive | CommandLineSlice | JSON | any
 }
 
 type Option interface {
@@ -142,7 +146,7 @@ func (c *Command) SubCommand(name, usage, description string, examples []string)
 }
 
 func (c *Command) Parse(args []string) error {
-	opts, remaining := ParseOptions(args)
+	opts, remaining := parseOptions(args)
 	for opt, values := range opts {
 		supportedOpts := fn.Filter(c.Options, func(o *Option) bool { return (*o).Name() == opt })
 		if len(supportedOpts) == 0 {
@@ -195,12 +199,12 @@ func (c *Command) Parse(args []string) error {
 	return (*subcmd[0]).Parse(remaining[1:])
 }
 
-// ParseOptions takes CLI arguments and returns a mapping of options to values, plus the remaining, non-option arguments.
+// parseOptions takes CLI arguments and returns a mapping of options to values, plus the remaining, non-option arguments.
 // Example:
 //   []string{"-a=1", "-b=2", "-c=3", "-b=4", "arg1", "arg2", "arg3"}
 //     becomes:
 //   map[string]Set[string]{"a":{"1"}, "b":{"2", "4"}, "c":{"3"}}, []string{"arg1", "arg2", "arg3"}
-func ParseOptions(args []string) (fn.MultiMap[string, string], []string) {
+func parseOptions(args []string) (fn.MultiMap[string, string], []string) {
 	if len(args) == 0 {
 		return fn.MultiMap[string, string]{}, args
 	}
@@ -218,7 +222,7 @@ func ParseOptions(args []string) (fn.MultiMap[string, string], []string) {
 		parts := strings.SplitN(arg, "=", 2)
 		if len(parts) == 1 {
 			flag := parts[0]
-			value, ok := Index(args, i+1)
+			value, ok := fn.Index(args, i+1)
 			if !ok {
 				// Continue if this is the end of the list
 				continue
@@ -238,29 +242,56 @@ func ParseOptions(args []string) (fn.MultiMap[string, string], []string) {
 	return flags, args[i:]
 }
 
-func Index[T any](slice []T, i int) (v T, ok bool) {
-	if i >= len(slice) {
-		return
+func parseAndAppend[T CommandLineType](sep string, v *[]T) func(string) error {
+	return func(s string) error {
+		parts := strings.Split(strings.TrimSpace(s), sep)
+		if len(*v) == 0 {
+			*v = make([]T, 0, len(parts))
+		}
+		for _, part := range parts {
+			part = strings.TrimSpace(part) // allows the user to use spaces between separator, e.g. "1, 2, 3"
+			var value T
+			f := converter(&value)
+			if err := f(part); err != nil {
+				return fmt.Errorf("error decoding %q: %w", s, err)
+			}
+			*v = append(*v, value)
+		}
+		return nil
 	}
-	return slice[i], true
 }
-
-var converters = map[reflect.Type]func(string) error{}
 
 func converter[T CommandLineType](v *T) func(string) error {
 	switch v := any(v).(type) {
+	case *[]bool:
+		return parseAndAppend(",", v)
 	case *[]int:
-		return func(s string) error {
-			parts := strings.Split(s, ",")
-			*v = make([]int, len(parts))
-			for i, part := range parts {
-				f := converter(&(*v)[i])
-				if err := f(part); err != nil {
-					return fmt.Errorf("error decoding %q: %w", s, err)
-				}
-			}
-			return nil
-		}
+		return parseAndAppend(",", v)
+	case *[]int8:
+		return parseAndAppend(",", v)
+	case *[]int16:
+		return parseAndAppend(",", v)
+	case *[]int32:
+		return parseAndAppend(",", v)
+	case *[]int64:
+		return parseAndAppend(",", v)
+	case *[]uint:
+		return parseAndAppend(",", v)
+	case *[]uint8:
+		return parseAndAppend(",", v)
+	case *[]uint16:
+		return parseAndAppend(",", v)
+	case *[]uint32:
+		return parseAndAppend(",", v)
+	case *[]uint64:
+		return parseAndAppend(",", v)
+	case *[]time.Duration:
+		return parseAndAppend(",", v)
+	case *[]string:
+		return parseAndAppend(",", v)
+	case *[]any:
+		return parseAndAppend(",", v)
+
 	case *bool:
 		return func(s string) error {
 			b, err := strconv.ParseBool(s)

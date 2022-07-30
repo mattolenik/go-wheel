@@ -104,3 +104,10 @@ func (s Set[T]) Values() []T {
 func Ptr[T any](v T) *T {
 	return &v
 }
+
+func Index[T any](slice []T, i int) (v T, ok bool) {
+	if i >= len(slice) {
+		return
+	}
+	return slice[i], true
+}
