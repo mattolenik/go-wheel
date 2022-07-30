@@ -2,6 +2,7 @@ package wheel
 
 import (
 	"testing"
+	"time"
 
 	ppv3 "github.com/k0kubun/pp/v3"
 	"github.com/mattolenik/go-charm/internal/fn"
@@ -45,6 +46,12 @@ func TestConvert(t *testing.T) {
 	assert.Contains(j, "a")
 	assert.Equal(float64(1), j["a"])
 
+	{
+		si := []bool{}
+		c := converter(&si)
+		assert.NoError(c("1, false,True"))
+		assert.Equal([]bool{true, false, true}, si)
+	}
 	{
 		si := []int{}
 		c := converter(&si)
@@ -105,5 +112,29 @@ func TestConvert(t *testing.T) {
 		c := converter(&si)
 		assert.NoError(c("1,2,3"))
 		assert.Equal([]uint64{1, 2, 3}, si)
+	}
+	{
+		si := []time.Duration{}
+		c := converter(&si)
+		assert.NoError(c("5s, 2m,3h"))
+		assert.Equal([]time.Duration{5 * time.Second, 2 * time.Minute, 3 * time.Hour}, si)
+	}
+	{
+		si := []string{}
+		c := converter(&si)
+		assert.NoError(c("a,b,c"))
+		assert.Equal([]string{"a", "b", "c"}, si)
+	}
+
+	// Empty conditions
+	{
+		si := []string{}
+		c := converter(&si)
+		assert.NoError(c(""))
+	}
+	{
+		si := []int{}
+		c := converter(&si)
+		assert.Error(c(""))
 	}
 }

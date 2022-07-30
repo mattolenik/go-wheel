@@ -156,6 +156,9 @@ func (c *Command) Parse(args []string) error {
 			// This is a panic rather than an error because duplicate options indicate a serious bug in the program.
 			panic(fmt.Errorf("duplicate option found, %q was defined %d times, must be only once", opt, len(supportedOpts)))
 		}
+		if !fn.Has(values.Values(), func(v string) bool { return v != "" }) {
+			return fmt.Errorf("option %q requires a value, instead found %q", opt, values.Values())
+		}
 		o := *supportedOpts[0]
 		if o.Type().Kind() == reflect.Slice {
 			if len(values) == 0 {

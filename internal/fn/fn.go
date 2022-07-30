@@ -37,6 +37,11 @@ func FindP[T any](items []T, predicate func(*T) bool) (found bool, value *T) {
 	return
 }
 
+func Has[T any](items []T, predicate func(T) bool) bool {
+	ok, _ := Find(items, predicate)
+	return ok
+}
+
 func Filter[T any](items []T, predicate func(*T) bool) []*T {
 	result := []*T{}
 	for i := range items {
