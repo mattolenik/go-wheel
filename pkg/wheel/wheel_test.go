@@ -37,4 +37,16 @@ func TestConvert(t *testing.T) {
 	assert.Equal(false, x)
 	assert.NoError(vf("1"))
 	assert.Equal(true, x)
+
+	j := JSON{}
+	jj := converter(&j)
+	assert.NoError(jj(`{"a":1}`))
+	assert.Contains(j, "a")
+	assert.Equal(float64(1), j["a"])
+
+	si := []int{}
+	sii := converter(&si)
+	err := sii("1,2,3")
+	assert.NoError(err)
+	assert.Equal([]int{1, 2, 3}, si)
 }

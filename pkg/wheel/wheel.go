@@ -1,6 +1,7 @@
 package wheel
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -11,12 +12,40 @@ import (
 	"github.com/mattolenik/go-charm/internal/refract"
 )
 
+type Stringable interface {
+	ToString() string
+	FromString(string) error
+}
+
+// JSON is a type alias of map[string]any for use with JSON arguments at the command line.
+type JSON map[string]any
+
+func (j JSON) String() string {
+	return j.ToString()
+}
+
+func (j JSON) ToString() string {
+	data, err := json.Marshal(j)
+	if err != nil {
+		return fmt.Errorf("cannot display value due to error: %w", err).Error()
+	}
+	return string(data)
+}
+
+func (j JSON) FromString(s string) error {
+	err := json.Unmarshal([]byte(s), &j)
+	if err != nil {
+		return fmt.Errorf("cannot parse value due to error: %w", err)
+	}
+	return nil
+}
+
 type CommandLineSliceType interface {
 	[]bool | []int | []int8 | []int16 | []int32 | []int64 | []uint | []uint8 | []uint16 | []uint32 | []uint64 | []time.Duration | []string | []any
 }
 
 type CommandLineType interface {
-	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | CommandLineSliceType | any
+	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string | CommandLineSliceType | JSON | any
 }
 
 type Option interface {
@@ -220,16 +249,14 @@ var converters = map[reflect.Type]func(string) error{}
 
 func converter[T CommandLineType](v *T) func(string) error {
 	switch v := any(v).(type) {
-	case *[]T:
-		conversionFuncs := make([]func(string) error, len(*v))
-		for i, item := range *v {
-			f := converter(&item)
-			conversionFuncs[i] = f
-		}
+	case *[]int:
 		return func(s string) error {
-			for _, f := range conversionFuncs {
-				if err := f(s); err != nil {
-					return err
+			parts := strings.Split(s, ",")
+			*v = make([]int, len(parts))
+			for i, part := range parts {
+				f := converter(&(*v)[i])
+				if err := f(part); err != nil {
+					return fmt.Errorf("error decoding %q: %w", s, err)
 				}
 			}
 			return nil
@@ -364,6 +391,10 @@ func converter[T CommandLineType](v *T) func(string) error {
 		return func(s string) error {
 			reflect.ValueOf(v).Elem().SetString(s)
 			return nil
+		}
+	case *JSON:
+		return func(s string) error {
+			return v.FromString(s)
 		}
 	default:
 		// TODO: handle other types
