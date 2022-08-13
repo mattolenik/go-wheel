@@ -20,14 +20,23 @@ func TestParse(t *testing.T) {
 
 	//args := []string{"-corge", "-grault", "-garply", "-waldo", "-fred", "-plugh", "-xyzzy", "-thud"}
 	//args := []string{"-corge", "1", "-corge", "1b", "-waldo", "hidden", "-thud", "arg1", "arg2"}
-	args := []string{"-a", "1"}
+	//args := []string{"-a", "1", "-b=4,5,6", "-c", "10", "-c", "-11", "-d", "20", "-d=30,40"}
+	args := []string{"-a", "1", "-b=4,5,6", "-c", "10", "-c=-11", "-d", "20", "-d=30,40"}
 
 	c := NewCommand("testparse", "testparse", "testparse", nil)
+
 	aOpt := AddOption(c, false, fn.Ptr(5), "a", "a test")
+	bOpt := AddOption(c, false, fn.Ptr([]int{}), "b", "b test")
+	cOpt := AddOption(c, false, fn.Ptr([]int{}), "c", "c test")
+	dOpt := AddOption(c, false, fn.Ptr([]int{}), "d", "d test")
+
 	err := c.Parse(args)
 	assert.NoError(err)
+
 	assert.Equal(1, *aOpt.TypedValue)
-	pp.Println(c)
+	assert.Equal([]int{4, 5, 6}, *bOpt.TypedValue)
+	assert.Equal([]int{10, -11}, *cOpt.TypedValue)
+	assert.Equal([]int{20, 30, 40}, *dOpt.TypedValue)
 }
 
 // TODO: More thorough tests and parameterization.

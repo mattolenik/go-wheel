@@ -204,42 +204,47 @@ func (c *Command) Parse(args []string) error {
 
 // parseOptions takes CLI arguments and returns a mapping of options to values, plus the remaining, non-option arguments.
 // Example:
-//   []string{"-a=1", "-b=2", "-c=3", "-b=4", "arg1", "arg2", "arg3"}
-//     becomes:
-//   map[string]Set[string]{"a":{"1"}, "b":{"2", "4"}, "c":{"3"}}, []string{"arg1", "arg2", "arg3"}
+//
+//	[]string{"-a=1", "-b=2", "-c=3", "-b=4", "arg1", "arg2", "arg3"}
+//	  becomes:
+//	map[string]Set[string]{"a":{"1"}, "b":{"2", "4"}, "c":{"3"}}, []string{"arg1", "arg2", "arg3"}
 func parseOptions(args []string) (fn.MultiMap[string, string], []string) {
 	if len(args) == 0 {
 		return fn.MultiMap[string, string]{}, args
 	}
 	flags := fn.MultiMap[string, string]{}
 	var i int
-	var arg string
-	for i, arg = range args {
+	for i := range args {
+		arg := args[i]
 		if strings.HasPrefix(arg, "--") {
 			arg = arg[2:]
 		} else if strings.HasPrefix(arg, "-") {
 			arg = arg[1:]
-		} else {
-			return flags, args[i:]
 		}
 		parts := strings.SplitN(arg, "=", 2)
-		if len(parts) == 1 {
+		if len(parts) == 1 { // This is the case of an = sign NOT appearing in the argument, i.e. NOT -a=b
+
+			// Look ahead at the next value to see if it is a flag or not.
+			// If not, treat it as an argument for the current flag.
+			// If there is no next value then this is the end of the list and we can just continue out of here.
 			flag := parts[0]
 			value, ok := fn.Index(args, i+1)
 			if !ok {
-				// Continue if this is the end of the list
+				// Continue if this is the end of the args list
 				continue
 			}
 			if strings.HasPrefix(value, "-") {
 				// Next arg is flag
 				continue
 			}
+			// Next arg is the flag's value
 			flags.Put(flag, value)
-		} else if len(parts) == 2 {
+		} else if len(parts) == 2 { // This is the case of an = sign being present, i.e. -a=b
+			// The value on the right side of the = sign is the flag's value
 			flags.Put(parts[0], parts[1])
 		} else {
 			// This shouldn't be possible since strings.SplitN(2) should never return a slice of length > 2
-			panic(fmt.Errorf("unexpected only 2 strings to be returned by strings.SplitN but instead got %d", len(parts)))
+			panic(fmt.Errorf("expected only 2 strings to be returned by strings.SplitN but instead got %d", len(parts)))
 		}
 	}
 	return flags, args[i:]
