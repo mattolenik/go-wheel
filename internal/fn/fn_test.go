@@ -67,19 +67,6 @@ func TestMultiMap(t *testing.T) {
 	assert.ElementsMatch([]int{}, v.Values())
 }
 
-func TestSet(t *testing.T) {
-	assert := assert.New(t)
-	s := Set[int]{}
-	assert.True(s.Add(10))
-	assert.False(s.Add(10))
-	assert.True(s.Add(11))
-	assert.ElementsMatch([]int{10, 11}, s.Values())
-	assert.True(s.Remove(10))
-	assert.ElementsMatch([]int{11}, s.Values())
-	assert.False(s.Remove(10))
-	assert.ElementsMatch([]int{11}, s.Values())
-}
-
 func TestFilter(t *testing.T) {
 	assert := assert.New(t)
 	items := []int{1, 2, 3, 4}

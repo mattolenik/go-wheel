@@ -82,30 +82,6 @@ func (m MultiMap[K, V]) Put(key K, value V) {
 	m[key].Add(value)
 }
 
-type Set[T comparable] map[T]struct{}
-
-func (s Set[T]) Add(item T) bool {
-	if _, ok := s[item]; ok {
-		return false
-	}
-	s[item] = struct{}{}
-	return true
-}
-
-func (s Set[T]) Remove(item T) bool {
-	_, ok := s[item]
-	delete(s, item)
-	return ok
-}
-
-func (s Set[T]) Values() []T {
-	values := make([]T, 0, len(s))
-	for item := range s {
-		values = append(values, item)
-	}
-	return values
-}
-
 func Ptr[T any](v T) *T {
 	return &v
 }
