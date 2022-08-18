@@ -52,47 +52,35 @@ type CommandLineType interface {
 	CommandLinePrimitive | CommandLineSlice | JSON | any
 }
 
-type Option interface {
-	Name() string
-	Usage() string
-	Required() bool
-	Type() reflect.Type
-	Value() any
-	Setter() func(string) error
+type Option struct {
+	Name        string
+	Description string
+	Examples    []string
+	IsRequired  bool
+	Type        reflect.Type
+	Setter      func(string) error
+	Get         func() any
 }
 
 type TypedOption[T CommandLineType] struct {
-	name         string
-	usage        string
-	required     bool
-	TypedValue   *T
-	DefaultValue *T
-	typ          reflect.Type
-	setter       func(string) error
+	Option
+	Value   *T
+	Default *T
 }
 
-func (o *TypedOption[T]) Name() string {
-	return o.name
+func (o *TypedOption[T]) Bind(value *T) *TypedOption[T] {
+	o.Value = value
+	return o
 }
 
-func (o *TypedOption[T]) Usage() string {
-	return o.usage
+func (o *TypedOption[T]) WithDefault(dflt T) *TypedOption[T] {
+	o.Default = &dflt
+	return o
 }
 
-func (o *TypedOption[T]) Required() bool {
-	return o.required
-}
-
-func (o *TypedOption[T]) Value() any {
-	return o.TypedValue
-}
-
-func (o *TypedOption[T]) Type() reflect.Type {
-	return o.typ
-}
-
-func (o *TypedOption[T]) Setter() func(string) error {
-	return o.setter
+func (o *TypedOption[T]) Required() *TypedOption[T] {
+	o.IsRequired = true
+	return o
 }
 
 type Command struct {
@@ -118,18 +106,20 @@ func NewCommand(name, usage, description string, examples []string) *Command {
 	return c
 }
 
-func AddOption[T CommandLineType](c *Command, required bool, defaultValue *T, name, usage string) *TypedOption[T] {
+func AddOption[T CommandLineType](c *Command, name, description string) *TypedOption[T] {
 	var value T
 	o := &TypedOption[T]{
-		name:         name,
-		required:     required,
-		usage:        usage,
-		DefaultValue: defaultValue,
-		TypedValue:   &value,
-		typ:          refract.TypeOf[T](),
-		setter:       converter(&value),
+		Option: Option{
+			Name:        name,
+			Description: description,
+			Type:        refract.TypeOf[T](),
+			Setter:      converter(&value),
+			// TODO: revisit this odd pattern
+			Get: func() any { return value },
+		},
+		Value: &value,
 	}
-	c.Options = append(c.Options, o)
+	c.Options = append(c.Options, o.Option)
 	return o
 }
 
@@ -145,10 +135,12 @@ func (c *Command) SubCommand(name, usage, description string, examples []string)
 	return sc
 }
 
+// TODO: make defaults work
+// TODO: make required work
 func (c *Command) Parse(args []string) error {
 	opts, remaining := parseOptions(args)
 	for opt, values := range opts {
-		supportedOpts := fn.Filter(c.Options, func(o *Option) bool { return (*o).Name() == opt })
+		supportedOpts := fn.Filter(c.Options, func(o *Option) bool { return (*o).Name == opt })
 		if len(supportedOpts) == 0 {
 			return fmt.Errorf("unsupported option %q, did you mean <TODO: insert help here>?", opt)
 		}
@@ -160,25 +152,25 @@ func (c *Command) Parse(args []string) error {
 			return fmt.Errorf("option %q requires a value, instead found %q", opt, values.Values())
 		}
 		o := *supportedOpts[0]
-		if o.Type().Kind() == reflect.Slice {
+		if o.Type.Kind() == reflect.Slice {
 			if len(values) == 0 {
 				return fmt.Errorf("option %q requires at least one value", opt)
 			}
 			for v := range values {
-				o.Setter()(v)
+				o.Setter(v)
 			}
 			continue
 		}
 		if len(values) == 0 {
-			if o.Type() == refract.TypeOf[bool]() {
-				o.Setter()("true")
+			if o.Type == refract.TypeOf[bool]() {
+				o.Setter("true")
 				continue
 			}
 			return fmt.Errorf("option %q requires a value", opt)
 		}
 		if len(values) == 1 {
 			v := values.Values()[0]
-			if err := o.Setter()(v); err != nil {
+			if err := o.Setter(v); err != nil {
 				return fmt.Errorf("option %q: %w", opt, err)
 			}
 		}

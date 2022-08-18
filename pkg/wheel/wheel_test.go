@@ -5,7 +5,6 @@ import (
 	"time"
 
 	ppv3 "github.com/k0kubun/pp/v3"
-	"github.com/mattolenik/go-charm/internal/fn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,28 +21,28 @@ func TestParse(t *testing.T) {
 	//args := []string{"-corge", "1", "-corge", "1b", "-waldo", "hidden", "-thud", "arg1", "arg2"}
 	//args := []string{"-a", "1", "-b=4,5,6", "-c", "10", "-c", "-11", "-d", "20", "-d=30,40"}
 	args := []string{
-		"-a", "1", "-b=4,5,6", "-c", "10", "-c=-11", "-d", "20", "-d=30,40", "-e=5s",
+		"-b=4,5,6", "-c", "10", "-c=-11", "-d", "20", "-d=30,40", "-e=5s",
 		"-boolOpt=true",
 	}
 
 	c := NewCommand("testparse", "testparse", "testparse", nil)
 
-	aOpt := AddOption(c, false, fn.Ptr(5), "a", "a test")
-	bOpt := AddOption(c, false, fn.Ptr([]int{}), "b", "b test")
-	cOpt := AddOption(c, false, fn.Ptr([]int{}), "c", "c test")
-	dOpt := AddOption(c, false, fn.Ptr([]int{}), "d", "d test")
-	eOpt := AddOption(c, false, fn.Ptr(time.Duration(0)), "e", "e test")
-	boolOpt := AddOption(c, false, fn.Ptr(false), "boolOpt", "bool test")
+	aOpt := AddOption[int](c, "a", "a test").WithDefault(1)
+	bOpt := AddOption[[]int](c, "b", "b test")
+	cOpt := AddOption[[]int](c, "c", "c test")
+	dOpt := AddOption[[]int](c, "d", "d test")
+	eOpt := AddOption[time.Duration](c, "e", "e test")
+	boolOpt := AddOption[bool](c, "boolOpt", "bool test")
 
 	err := c.Parse(args)
 	assert.NoError(err)
 
-	assert.Equal(1, *aOpt.TypedValue)
-	assert.Equal([]int{4, 5, 6}, *bOpt.TypedValue)
-	assert.Equal([]int{10, -11}, *cOpt.TypedValue)
-	assert.Equal([]int{20, 30, 40}, *dOpt.TypedValue)
-	assert.Equal(5*time.Second, *eOpt.TypedValue)
-	assert.True(*boolOpt.TypedValue)
+	assert.Equal(1, *aOpt.Value)
+	assert.Equal([]int{4, 5, 6}, *bOpt.Value)
+	assert.Equal([]int{10, -11}, *cOpt.Value)
+	assert.Equal([]int{20, 30, 40}, *dOpt.Value)
+	assert.Equal(5*time.Second, *eOpt.Value)
+	assert.True(*boolOpt.Value)
 }
 
 // TODO: More thorough tests and parameterization.
