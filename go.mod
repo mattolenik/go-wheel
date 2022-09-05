@@ -1,4 +1,4 @@
-module github.com/mattolenik/go-charm
+module github.com/mattolenik/go-wheel
 
 go 1.19
 

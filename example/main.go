@@ -6,9 +6,8 @@ import (
 	"reflect"
 
 	ppv3 "github.com/k0kubun/pp/v3"
-	"github.com/mattolenik/go-charm/pkg/charm"
-	"github.com/mattolenik/go-charm/pkg/typ"
-	"github.com/mattolenik/go-charm/pkg/wheel"
+	"github.com/mattolenik/go-wheel/pkg/typ"
+	"github.com/mattolenik/go-wheel/pkg/wheel"
 )
 
 var pp *ppv3.PrettyPrinter = ppv3.New()
@@ -52,28 +51,28 @@ func Index[T any](slice []T, i int) (v T, ok bool) {
 // 	pp := pp.New()
 // 	pp.SetExportedOnly(true)
 
-// 	c := charm.NewCommand("dbdrawer", "dbd something something", func(c *charm.Command) error {
+// 	c := wheel.NewCommand("dbdrawer", "dbd something something", func(c *wheel.Command) error {
 // 		fmt.Println("dbdrawer impl here")
 // 		return nil
 // 	})
-// 	_ = c.SubCommand("sub1", "subcommand 1", func(c *charm.Command) error {
+// 	_ = c.SubCommand("sub1", "subcommand 1", func(c *wheel.Command) error {
 // 		fmt.Println("sub1 impl here")
 // 		return nil
 // 	})
-// 	_ = c.SubCommand("sub2", "subcommand 2", func(c *charm.Command) error {
+// 	_ = c.SubCommand("sub2", "subcommand 2", func(c *wheel.Command) error {
 // 		fmt.Println("sub2 impl here")
 // 		return nil
 // 	})
 
-// 	//_ = charm.FlagF(c, []int{}, false, "sl", "a slice")
-// 	//_ = charm.FlagF(c, "", false, "a", "a string")
+// 	//_ = wheel.FlagF(c, []int{}, false, "sl", "a slice")
+// 	//_ = wheel.FlagF(c, "", false, "a", "a string")
 
 // 	//err := c.Parse(os.Args[1:])
 // 	//if err != nil {
 // 	//	return err
 // 	//}
 
-// 	//_ = charm.FlagF(c, 5, false, "intval", "the int value")
+// 	//_ = wheel.FlagF(c, 5, false, "intval", "the int value")
 // 	//err = c.Parse(os.Args[1:])
 // 	//if err != nil {
 // 	//	return err
@@ -120,7 +119,7 @@ func (ft *FlagTags) String() string {
 // return p.Interface()
 
 // Parse takes all the tags from all the fields of the given struct and assigns them to the corresponding fields of a FlagTags struct.
-func Parse(c *charm.Command, struc any) error {
+func Parse(c *wheel.Command, struc any) error {
 	strucType := reflect.TypeOf(struc).Elem()
 	structVal := reflect.ValueOf(struc).Elem()
 	if strucType.Kind() != reflect.Struct {
@@ -148,7 +147,7 @@ func Parse(c *charm.Command, struc any) error {
 			Usage:    Ptr(f.Tag.Get("usage")),
 			Required: required,
 		}
-		charm.FlagVar(c, aVal, nil, ftgs.Required, *ftgs.Flag, *ftgs.Usage)
+		wheel.FlagVar(c, aVal, nil, ftgs.Required, *ftgs.Flag, *ftgs.Usage)
 	}
 	return nil
 }

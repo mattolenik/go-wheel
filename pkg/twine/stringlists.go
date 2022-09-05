@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mattolenik/go-charm/pkg/typ"
+	"github.com/mattolenik/go-wheel/pkg/typ"
 )
 
 // TODO: Add tests for this package

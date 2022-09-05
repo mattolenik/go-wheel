@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattolenik/go-charm/internal/fn"
-	"github.com/mattolenik/go-charm/internal/refract"
+	"github.com/mattolenik/go-wheel/internal/fn"
+	"github.com/mattolenik/go-wheel/internal/refract"
 )
 
 type Stringable interface {

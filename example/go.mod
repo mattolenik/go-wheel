@@ -1,12 +1,12 @@
-module charmexample
+module wheelexample
 
 go 1.18
 
-replace github.com/mattolenik/go-charm => /Users/matt/go-charm
+replace github.com/mattolenik/go-wheel => /Users/matt/go-wheel
 
 require (
 	github.com/k0kubun/pp/v3 v3.1.0
-	github.com/mattolenik/go-charm v0.0.0
+	github.com/mattolenik/go-wheel v0.0.0
 )
 
 require (
