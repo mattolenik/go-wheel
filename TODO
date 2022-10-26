@@ -1,1 +1,2 @@
 - [ ] Have two parsers, one that uses GNU-style args and one that uses Go style. Or have a flag for this.
+- [ ] Cobra conversion tool
