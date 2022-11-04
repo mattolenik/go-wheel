@@ -1,7 +1,6 @@
 package wheel
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -11,77 +10,6 @@ import (
 	"github.com/mattolenik/go-wheel/internal/fn"
 	"github.com/mattolenik/go-wheel/internal/refract"
 )
-
-type Stringable interface {
-	ToString() string
-	FromString(string) error
-}
-
-// JSON is a type alias of map[string]any for use with JSON arguments at the command line.
-type JSON map[string]any
-
-func (j JSON) String() string {
-	return j.ToString()
-}
-
-func (j JSON) ToString() string {
-	data, err := json.Marshal(j)
-	if err != nil {
-		return fmt.Errorf("cannot display value due to error: %w", err).Error()
-	}
-	return string(data)
-}
-
-func (j JSON) FromString(s string) error {
-	err := json.Unmarshal([]byte(s), &j)
-	if err != nil {
-		return fmt.Errorf("cannot parse value due to error: %w", err)
-	}
-	return nil
-}
-
-type CommandLineSlice interface {
-	[]bool | []int | []int8 | []int16 | []int32 | []int64 | []uint | []uint8 | []uint16 | []uint32 | []uint64 | []time.Duration | []string | []any
-}
-
-type CommandLinePrimitive interface {
-	bool | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | time.Duration | string
-}
-
-type CommandLineType interface {
-	CommandLinePrimitive | CommandLineSlice | JSON | any
-}
-
-type Option struct {
-	Name        string
-	Description string
-	Examples    []string
-	IsRequired  bool
-	Type        reflect.Type
-	Setter      func(string) error
-	Get         func() any
-}
-
-type TypedOption[T CommandLineType] struct {
-	Option
-	Value   *T
-	Default *T
-}
-
-func (o *TypedOption[T]) Bind(value *T) *TypedOption[T] {
-	o.Value = value
-	return o
-}
-
-func (o *TypedOption[T]) WithDefault(dflt T) *TypedOption[T] {
-	o.Default = &dflt
-	return o
-}
-
-func (o *TypedOption[T]) Required() *TypedOption[T] {
-	o.IsRequired = true
-	return o
-}
 
 type Command struct {
 	Name        string
