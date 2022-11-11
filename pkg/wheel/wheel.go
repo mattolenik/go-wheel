@@ -19,46 +19,51 @@ type Command struct {
 	Options     []Option
 	SubCommands []*Command
 	// TODO: make arg parsing strongly typed
-	Args    []string
-	parent  *Command
-	Invoked bool
+	Args            []string
+	parent          *Command
+	Invoked         bool
+	SeparateRawArgs bool
+	RawArgSeparator string
 }
 
 func NewCommand(name, usage, description string, examples []string) *Command {
 	c := &Command{
-		Name:        name,
-		Usage:       usage,
-		Description: description,
-		Examples:    examples,
+		Name:            name,
+		Usage:           usage,
+		Description:     description,
+		Examples:        examples,
+		SeparateRawArgs: true,
+		RawArgSeparator: "--",
 	}
 	return c
 }
 
 func AddOption[T CommandLineType](c *Command, name, description string) *TypedOption[T] {
+	if _, exists := fn.FindP(c.Options, func(o *Option) bool { return o.Name == name }); exists {
+		panic(fmt.Errorf("an option with the name %q already exists", name))
+	}
 	var value T
-	o := &TypedOption[T]{
-		Option: Option{
-			Name:        name,
-			Description: description,
-			Type:        refract.TypeOf[T](),
-			Setter:      converter(&value),
-			// TODO: revisit this odd pattern
-			Get: func() any { return value },
-		},
-		Value: &value,
+	o := &TypedOption[T]{Value: &value}
+	o.Option = Option{
+		Name:        name,
+		Description: description,
+		Type:        refract.TypeOf[T](),
+		// TODO: converter needs to reference this option instance so that it can add to it, e.g. -a=1 -a=2 should be an array
+		Setter: converter(&value),
+		// TODO: revisit this odd pattern
+		Get:         func() any { return value },
+		TypedOption: o,
 	}
 	c.Options = append(c.Options, o.Option)
 	return o
 }
 
 func (c *Command) SubCommand(name, usage, description string, examples []string) *Command {
-	sc := &Command{
-		Name:        name,
-		Usage:       usage,
-		Description: description,
-		Examples:    examples,
-		parent:      c,
+	if _, ok := fn.Find(c.SubCommands, func(sc *Command) bool { return sc.Name == name }); ok {
+		panic(fmt.Errorf("a subcommand with the name %q already exists", name))
 	}
+	sc := NewCommand(name, usage, description, examples)
+	sc.parent = c
 	c.SubCommands = append(c.SubCommands, sc)
 	return sc
 }
@@ -68,7 +73,11 @@ func (c *Command) parseBetter(args []string) error {
 		return nil
 	}
 	arg := args[0]
-	if arg == "--" || arg == "-" {
+	if c.SeparateRawArgs && arg == c.RawArgSeparator {
+		c.Args = append(c.Args, args[1:]...)
+		return nil
+	}
+	if arg == c.RawArgSeparator || arg == "-" {
 		c.Args = append(c.Args, arg)
 		return c.parseBetter(args[1:])
 	}
@@ -83,24 +92,40 @@ func (c *Command) parseBetter(args []string) error {
 		c.Args = append(c.Args, arg)
 		return c.parseBetter(args[1:])
 	}
-	if opt, ok := fn.FindP(c.Options, func(o *Option) bool { return o.Name == arg }); ok {
-		val, hasVal := parseOptValue(arg, args[1:])
+
+	opt, ok := fn.FindP(c.Options, func(o *Option) bool { return o.Name == arg })
+	if !ok {
+		// TODO: Also search upwards for global options
+		return &InvalidOptionError{arg}
 	}
-	return nil
+	val, hasVal, remainingArgs := parseOptValue(arg, args[1:])
+	if hasVal {
+		err := opt.Setter(val)
+		if err != nil {
+			return fmt.Errorf("invalid value for %q, %w", arg, err)
+		}
+	} else {
+		// If there is no value, just the bare flag, this is treated as a boolean type
+		err := opt.Setter("True")
+		if err != nil {
+			return fmt.Errorf("invalid value for %q, %w", arg, err)
+		}
+	}
+	return c.parseBetter(remainingArgs)
 }
 
-func parseOptValue(opt string, nextArgs []string) (string, bool) {
+func parseOptValue(opt string, nextArgs []string) (string, bool, []string) {
 	parts := strings.SplitN(opt, "=", 2)
 	if len(parts) == 2 {
-		return parts[1], true
+		return parts[1], true, nextArgs
 	}
 	if len(nextArgs) == 0 {
-		return "", false
+		return "", false, nextArgs
 	}
 	if strings.HasPrefix(nextArgs[0], "-") {
-		return "", false
+		return "", false, nextArgs
 	}
-	return nextArgs[0], true
+	return nextArgs[0], true, nextArgs[1:]
 }
 
 // TODO: make defaults work
@@ -143,6 +168,7 @@ func (c *Command) Parse(args []string) error {
 			}
 		}
 		if len(values) > 1 {
+			 
 			return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
 		}
 	}

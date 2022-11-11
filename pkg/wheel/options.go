@@ -10,6 +10,7 @@ type Option struct {
 	Type        reflect.Type
 	Setter      func(string) error
 	Get         func() any
+	TypedOption any
 }
 
 type TypedOption[T CommandLineType] struct {
