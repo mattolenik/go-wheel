@@ -63,6 +63,46 @@ func (c *Command) SubCommand(name, usage, description string, examples []string)
 	return sc
 }
 
+func (c *Command) parseBetter(args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	arg := args[0]
+	if arg == "--" || arg == "-" {
+		c.Args = append(c.Args, arg)
+		return c.parseBetter(args[1:])
+	}
+	if sc, ok := fn.Find(c.SubCommands, func(c *Command) bool { return c.Name == arg }); ok {
+		return sc.parseBetter(args[1:])
+	}
+	if trimmed := strings.TrimPrefix(arg, "--"); trimmed != arg {
+		arg = trimmed
+	} else if trimmed := strings.TrimPrefix(arg, "-"); trimmed != arg {
+		arg = trimmed
+	} else {
+		c.Args = append(c.Args, arg)
+		return c.parseBetter(args[1:])
+	}
+	if opt, ok := fn.FindP(c.Options, func(o *Option) bool { return o.Name == arg }); ok {
+		val, hasVal := parseOptValue(arg, args[1:])
+	}
+	return nil
+}
+
+func parseOptValue(opt string, nextArgs []string) (string, bool) {
+	parts := strings.SplitN(opt, "=", 2)
+	if len(parts) == 2 {
+		return parts[1], true
+	}
+	if len(nextArgs) == 0 {
+		return "", false
+	}
+	if strings.HasPrefix(nextArgs[0], "-") {
+		return "", false
+	}
+	return nextArgs[0], true
+}
+
 // TODO: make defaults work
 // TODO: make required work
 func (c *Command) Parse(args []string) error {

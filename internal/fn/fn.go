@@ -19,26 +19,26 @@ func MapP[T, R any](items []T, f func(*T) R) []R {
 	return result
 }
 
-func Find[T any](items []T, predicate func(T) bool) (found bool, value T) {
+func Find[T any](items []T, predicate func(T) bool) (value T, found bool) {
 	for _, i := range items {
 		if predicate(i) {
-			return true, i
+			return i, true
 		}
 	}
 	return
 }
 
-func FindP[T any](items []T, predicate func(*T) bool) (found bool, value *T) {
+func FindP[T any](items []T, predicate func(*T) bool) (value *T, found bool) {
 	for i := range items {
 		if predicate(&items[i]) {
-			return true, &items[i]
+			return &items[i], true
 		}
 	}
 	return
 }
 
 func Has[T any](items []T, predicate func(T) bool) bool {
-	ok, _ := Find(items, predicate)
+	_, ok := Find(items, predicate)
 	return ok
 }
 

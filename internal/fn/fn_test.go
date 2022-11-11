@@ -10,15 +10,15 @@ import (
 func TestFind(t *testing.T) {
 	assert := assert.New(t)
 
-	ok, val := Find([]int{1, 2, 3}, func(i int) bool { return i == 2 })
+	val, ok := Find([]int{1, 2, 3}, func(i int) bool { return i == 2 })
 	assert.True(ok)
 	assert.Equal(2, val)
 
-	ok, val = Find([]int{1, 2, 3}, func(i int) bool { return i == 4 })
+	val, ok = Find([]int{1, 2, 3}, func(i int) bool { return i == 4 })
 	assert.False(ok)
 	assert.Equal(0, val)
 
-	ok, val = Find([]int{}, func(i int) bool { return i == 4 })
+	val, ok = Find([]int{}, func(i int) bool { return i == 4 })
 	assert.False(ok)
 	assert.Equal(0, val)
 }
@@ -26,14 +26,14 @@ func TestFind(t *testing.T) {
 func TestFindP(t *testing.T) {
 	assert := assert.New(t)
 
-	ok, val := FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 2 })
+	val, ok := FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 2 })
 	assert.True(ok)
 	assert.Equal(2, *val)
 
-	ok, _ = FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 4 })
+	_, ok = FindP([]int{1, 2, 3}, func(i *int) bool { return *i == 4 })
 	assert.False(ok)
 
-	ok, _ = FindP([]int{}, func(i *int) bool { return *i == 4 })
+	_, ok = FindP([]int{}, func(i *int) bool { return *i == 4 })
 	assert.False(ok)
 }
 
