@@ -5,6 +5,7 @@ import (
 	"time"
 
 	ppv3 "github.com/k0kubun/pp/v3"
+	"github.com/mattolenik/go-wheel/internal/fn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -152,4 +153,42 @@ func TestConvert(t *testing.T) {
 		c := converter(&si)
 		assert.Error(c(""))
 	}
+}
+
+func TestCommand_gatherGlobalOpts(t *testing.T) {
+	assert := assert.New(t)
+
+	h := Option{Name: "h", Description: "topmost h", Global: true}
+	v := Option{Name: "v", Description: "topmost v", Global: false}
+	a := Option{Name: "a", Global: true}
+	b := Option{Name: "b", Global: false}
+	c := Option{Name: "c", Global: true}
+	e := Option{Name: "e", Global: true}
+	f := Option{Name: "f", Global: false}
+	v2 := Option{Name: "v", Global: true}
+	h2 := Option{Name: "h", Global: true}
+	i := Option{Name: "i", Global: false}
+	j := Option{Name: "j", Global: true}
+
+	l0 := &Command{
+		Options: []Option{h, v},
+	}
+	l1 := &Command{
+		parent:  l0,
+		Options: []Option{a, b, c},
+	}
+	l2 := &Command{
+		parent:  l1,
+		Options: []Option{e, f, v2},
+	}
+	l3 := &Command{
+		parent:  l2,
+		Options: []Option{h2, i, j},
+	}
+
+	opts := l3.gatherGlobalOpts()
+	assert.Equal([]*Option{&h2, &j, &e, &v2, &a, &c}, opts)
+
+	names := fn.Map(opts, func(o *Option) string { return o.Name })
+	assert.Equal([]string{"h", "j", "e", "v", "a", "c"}, names)
 }

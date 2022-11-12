@@ -68,6 +68,21 @@ func (c *Command) SubCommand(name, usage, description string, examples []string)
 	return sc
 }
 
+func (c *Command) gatherGlobalOpts() []*Option {
+	opts := fn.Filter(c.Options, func(o *Option) bool { return o.Global })
+	parentOpts := []*Option{}
+	if c.parent != nil {
+		parentOpts = c.parent.gatherGlobalOpts()
+	}
+	for _, o := range parentOpts {
+		_, found := fn.Find(opts, func(oo *Option) bool { return oo.Name == o.Name })
+		if !found {
+			opts = append(opts, o)
+		}
+	}
+	return opts
+}
+
 func (c *Command) parseBetter(args []string) error {
 	if len(args) == 0 {
 		return nil
@@ -168,7 +183,7 @@ func (c *Command) Parse(args []string) error {
 			}
 		}
 		if len(values) > 1 {
-			 
+
 			return fmt.Errorf("option %q can only be specified once but was found %d times", opt, len(values))
 		}
 	}

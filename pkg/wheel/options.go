@@ -11,6 +11,7 @@ type Option struct {
 	Setter      func(string) error
 	Get         func() any
 	TypedOption any
+	Global      bool
 }
 
 type TypedOption[T CommandLineType] struct {
