@@ -143,11 +143,22 @@ func parseOptValue(opt string, nextArgs []string) (string, bool, []string) {
 	return nextArgs[0], true, nextArgs[1:]
 }
 
-// TODO: make defaults work
-// TODO: make required work
 func (c *Command) Parse(args []string) error {
 	opts, remaining := parseOptions(args)
-	for opt, values := range opts {
+	fmt.Println(opts)
+	for _, definedOpt := range c.Options {
+		opt := definedOpt.Name
+		fmt.Println("opt: " + opt)
+		values, ok := opts.Lookup(opt)
+		if !ok && definedOpt.IsRequired {
+			if definedOpt.Default != nil {
+				if err := definedOpt.Setter(*definedOpt.Default); err != nil {
+					return fmt.Errorf("option %q: %w", opt, err)
+				}
+				continue
+			}
+			return fmt.Errorf("must provide a value for option %q", opt)
+		}
 		supportedOpts := fn.Filter(c.Options, func(o *Option) bool { return (*o).Name == opt })
 		if len(supportedOpts) == 0 {
 			return fmt.Errorf("unsupported option %q, did you mean <TODO: insert help here>?", opt)
@@ -156,22 +167,31 @@ func (c *Command) Parse(args []string) error {
 			// This is a panic rather than an error because duplicate options indicate a serious bug in the program.
 			panic(fmt.Errorf("duplicate option found, %q was defined %d times, must be only once", opt, len(supportedOpts)))
 		}
-		if !fn.Has(values.Values(), func(v string) bool { return v != "" }) {
-			return fmt.Errorf("option %q requires a value, instead found %q", opt, values.Values())
-		}
 		o := *supportedOpts[0]
+		hasValue := fn.Has(values.Values(), func(v string) bool { return v != "" })
+		fmt.Println(hasValue)
+		if !hasValue && o.Default != nil {
+			if err := o.Setter(*o.Default); err != nil {
+				return fmt.Errorf("option %q: %w", opt, err)
+			}
+			continue
+		}
 		if o.Type.Kind() == reflect.Slice {
 			if len(values) == 0 {
 				return fmt.Errorf("option %q requires at least one value", opt)
 			}
 			for v := range values {
-				o.Setter(v)
+				if err := o.Setter(v); err != nil {
+					return fmt.Errorf("option %q: %w", opt, err)
+				}
 			}
 			continue
 		}
 		if len(values) == 0 {
 			if o.Type == refract.TypeOf[bool]() {
-				o.Setter("true")
+				if err := o.Setter("true"); err != nil {
+					return fmt.Errorf("option %q: %w", opt, err)
+				}
 				continue
 			}
 			return fmt.Errorf("option %q requires a value", opt)
@@ -212,6 +232,8 @@ func (c *Command) Parse(args []string) error {
 func parseOptions(args []string) (fn.MultiMap[string, string], []string) {
 	if len(args) == 0 {
 		return fn.MultiMap[string, string]{}, args
+	}
+	if s := strings.SplitN("a=b", "=", 1); len(s) > 1 {
 	}
 	flags := fn.MultiMap[string, string]{}
 	var i int

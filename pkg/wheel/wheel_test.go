@@ -28,7 +28,7 @@ func TestParse(t *testing.T) {
 
 	c := NewCommand("testparse", "testparse", "testparse", nil)
 
-	aOpt := AddOption[int](c, "a", "a test").WithDefault(1)
+	aOpt := AddOption[int](c, "a", "a test").WithDefault("1")
 	bOpt := AddOption[[]int](c, "b", "b test")
 	cOpt := AddOption[[]int](c, "c", "c test")
 	dOpt := AddOption[[]int](c, "d", "d test")
@@ -41,7 +41,7 @@ func TestParse(t *testing.T) {
 	assert.Equal(1, *aOpt.Value)
 	assert.Equal([]int{4, 5, 6}, *bOpt.Value)
 	assert.Equal([]int{10, -11}, *cOpt.Value)
-	assert.Equal([]int{20, 30, 40}, *dOpt.Value)
+	assert.EqualValues([]int{20, 30, 40}, *dOpt.Value)
 	assert.Equal(5*time.Second, *eOpt.Value)
 	assert.True(*boolOpt.Value)
 }
